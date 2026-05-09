@@ -475,7 +475,7 @@ export class ContentDepartmentLiveMvpService {
       event_type: isApproved ? "live_content_workflow_approved" : "live_content_workflow_changes_requested",
       action: isApproved ? "approve_mother_baby_tiktok_campaign" : "request_changes_mother_baby_tiktok_campaign",
       severity: "medium",
-      summary: isApproved ? "Human approved Mother-and-baby TikTok Campaign output." : "Human requested changes for Mother-and-baby TikTok Campaign output.",
+      summary: isApproved ? "ผู้รีวิวอนุมัติ output ของ Mother-and-baby TikTok Campaign" : "ผู้รีวิวขอแก้ไข output ของ Mother-and-baby TikTok Campaign",
       decision,
       related_workflow_id: input.runKey,
       metadata: { approvalKey, approvalNotes: input.approvalNotes, feedback, qualityEvaluation, memoryCuration, proposalSaved }
@@ -639,10 +639,10 @@ export class ContentDepartmentLiveMvpService {
         },
         operationalAlerts,
         workflowHealthIndicators: [
-          { label: "Workflow completion", value: `${completionRate}%`, status: completionRate >= 80 || contentRuns.length === 0 ? "healthy" : "watch" },
-          { label: "Approval queue", value: String(contentApprovals.filter((approval) => approval.status === "requested").length), status: contentApprovals.some((approval) => approval.status === "requested") ? "watch" : "healthy" },
-          { label: "Output quality", value: averageOutputScore ? `${averageOutputScore.toFixed(1)}/10` : "unscored", status: !averageOutputScore || averageOutputScore >= 7 ? "healthy" : "watch" },
-          { label: "Persistence", value: this.context.persistenceMode, status: this.context.persistenceMode === "configured" ? "healthy" : "degraded" }
+          { label: "ความสำเร็จของ workflow", value: `${completionRate}%`, status: completionRate >= 80 || contentRuns.length === 0 ? "healthy" : "watch" },
+          { label: "คิวอนุมัติ", value: String(contentApprovals.filter((approval) => approval.status === "requested").length), status: contentApprovals.some((approval) => approval.status === "requested") ? "watch" : "healthy" },
+          { label: "คุณภาพ output", value: averageOutputScore ? `${averageOutputScore.toFixed(1)}/10` : "ยังไม่มีคะแนน", status: !averageOutputScore || averageOutputScore >= 7 ? "healthy" : "watch" },
+          { label: "การบันทึกข้อมูล", value: this.context.persistenceMode, status: this.context.persistenceMode === "configured" ? "healthy" : "degraded" }
         ],
         activeRuns: contentRuns.filter((run) => run.status === "waiting_approval" || run.status === "running").length,
         completedRuns: contentRuns.filter((run) => run.status === "completed").length,
@@ -1032,48 +1032,48 @@ function buildOperationalAlerts(input: {
   if (input.persistenceMode !== "configured") {
     alerts.push({
       level: "warning",
-      title: "Persistence fallback active",
-      detail: input.persistenceReason ?? "Supabase is not configured; in-memory records will reset when the server restarts."
+      title: "กำลังใช้โหมดจำลองข้อมูล",
+      detail: input.persistenceReason ?? "ยังไม่ได้ตั้งค่า Supabase ข้อมูลใน memory จะหายเมื่อรีสตาร์ตเซิร์ฟเวอร์"
     });
   }
 
   if (input.pendingApprovals > 0) {
     alerts.push({
       level: "info",
-      title: "Approval queue has work",
-      detail: `${input.pendingApprovals} Content Production Workflow approval request(s) are waiting for human review.`
+      title: "มีงานรออนุมัติ",
+      detail: `มีคำขออนุมัติ Content Production Workflow ${input.pendingApprovals} รายการที่รอมนุษย์รีวิว`
     });
   }
 
   if (input.failedCount > 0) {
     alerts.push({
       level: "critical",
-      title: "Workflow failures detected",
-      detail: `${input.failedCount} workflow run(s) need investigation before daily operation continues.`
+      title: "พบ workflow ที่ล้มเหลว",
+      detail: `มี workflow ${input.failedCount} รายการที่ควรตรวจสอบก่อนใช้งานต่อในรอบวัน`
     });
   }
 
   if (input.rejectedCount > 0) {
     alerts.push({
       level: "warning",
-      title: "Changes requested",
-      detail: `${input.rejectedCount} workflow output(s) were sent back for revision. Review quality notes before repeating.`
+      title: "มีงานที่ขอแก้ไข",
+      detail: `มี output ${input.rejectedCount} รายการที่ถูกส่งกลับไปแก้ไข ควรอ่าน quality notes ก่อนรันซ้ำ`
     });
   }
 
   if (input.averageOutputScore !== undefined && input.averageOutputScore < 7) {
     alerts.push({
       level: "warning",
-      title: "Output quality needs review",
-      detail: `Average reviewer score is ${input.averageOutputScore}/10. Check feedback notes before using outputs operationally.`
+      title: "ควรรีวิวคุณภาพ output",
+      detail: `คะแนนเฉลี่ยจากผู้รีวิวคือ ${input.averageOutputScore}/10 ควรตรวจ feedback notes ก่อนนำไปใช้จริง`
     });
   }
 
   if (!alerts.length) {
     alerts.push({
       level: "info",
-      title: "Daily operation ready",
-      detail: "No workflow failures or approval bottlenecks detected in the current snapshot."
+      title: "พร้อมสำหรับการใช้งานวันนี้",
+      detail: "ยังไม่พบ workflow ล้มเหลวหรือคิวอนุมัติที่ติดค้างใน snapshot ปัจจุบัน"
     });
   }
 

@@ -52,55 +52,55 @@ export function analyzeAdsPerformance(input: AdsPerformanceReviewInput): AdsPerf
       expectedRange: `${lowCtr.toFixed(1)}%-${highCtr.toFixed(1)}%`,
       confidence: Math.round(confidence * 100) / 100,
       rationale: hasChecklistAngle
-        ? "Checklist and reassurance framing usually create clearer click intent for parent audiences."
-        : "Campaign has usable creative volume, but the click driver should be made more specific before paid testing."
+        ? "มุม checklist และการให้ความมั่นใจช่วยให้กลุ่มพ่อแม่เข้าใจเหตุผลในการคลิกได้ชัดขึ้น"
+        : "แคมเปญมีจำนวนชิ้นงานเพียงพอสำหรับทดสอบ แต่ควรทำจุดดึงคลิกให้เฉพาะเจาะจงขึ้นก่อนยิงแอด"
     },
     audienceTargeting: {
       primarySegment: input.marketing.segment,
       testSegments: [
-        "New parents researching practical baby-care choices",
-        "Thai families comparing safe product options",
-        "Mothers who respond to checklist and reassurance content"
+        "พ่อแม่มือใหม่ที่กำลังหาตัวเลือกดูแลลูกที่ใช้ได้จริง",
+        "ครอบครัวไทยที่เปรียบเทียบตัวเลือกสินค้าอย่างรอบคอบ",
+        "คุณแม่ที่ตอบสนองกับคอนเทนต์แบบ checklist และให้ความมั่นใจ"
       ],
       exclusions: [
-        "Users looking for direct medical advice",
-        "Audiences outside approved product availability",
-        "Low-intent broad parenting interest groups without recent engagement"
+        "ผู้ใช้ที่ต้องการคำแนะนำทางการแพทย์โดยตรง",
+        "กลุ่มนอกพื้นที่หรือเงื่อนไขการขายที่อนุมัติไว้",
+        "กลุ่มความสนใจ parenting ที่กว้างเกินไปและไม่มี engagement ล่าสุด"
       ]
     },
     creativePerformance: {
       strongestHooks,
       weakSignals: [
-        "Avoid claim-heavy language that implies guaranteed medical or performance outcomes.",
-        "Use one clear message per video to reduce scroll confusion."
+        "หลีกเลี่ยงภาษาที่สื่อว่ารับประกันผลลัพธ์ทางสุขภาพหรือประสิทธิภาพ",
+        "ใช้หนึ่งข้อความหลักต่อหนึ่งวิดีโอ เพื่อลดความสับสนตอนผู้ชมเลื่อนผ่าน"
       ],
       contentFeedback: [
-        "Prioritize the strongest checklist hook for the first ad variant.",
-        "Turn objections into short retargeting captions.",
-        "Keep CTA low-pressure: message us for details rather than buy now."
+        "นำฮุก checklist ที่แข็งแรงที่สุดไปใช้เป็น ad variant แรก",
+        "เปลี่ยนข้อกังวลของลูกค้าเป็น caption สั้นสำหรับ retargeting",
+        "ใช้ CTA แบบไม่กดดัน เช่น ทักแชทเพื่อขอรายละเอียด แทนการเร่งให้ซื้อทันที"
       ]
     },
     optimizationSuggestions: [
-      "Run 3-hook test with identical CTA to isolate hook performance.",
-      "Separate cold audience and warm retargeting ad sets.",
-      "Pause variants below 0.8% CTR after enough impressions.",
-      "Promote variants with high save/comment rate into the next content batch."
+      "ทดสอบ 3 ฮุกโดยใช้ CTA เดียวกัน เพื่อดูผลของฮุกอย่างชัดเจน",
+      "แยกกลุ่ม cold audience และ warm retargeting ออกจากกัน",
+      "หยุด variant ที่ CTR ต่ำกว่า 0.8% หลังมี impression เพียงพอ",
+      "นำ variant ที่มี save/comment สูงไปต่อยอดใน content batch ถัดไป"
     ],
     budgetEfficiency: {
-      recommendation: "Use small validation budget only after human approval; do not spend automatically.",
+      recommendation: "ใช้งบทดสอบขนาดเล็กหลังมนุษย์อนุมัติเท่านั้น ห้ามใช้เงินอัตโนมัติ",
       riskLevel: "medium",
-      guardrail: "Budget changes and live ad launch require human/CFO approval and an approved ads harness."
+      guardrail: "การเปลี่ยนงบหรือเปิดแอดจริงต้องได้รับอนุมัติจากมนุษย์/CFO และใช้ ads harness ที่ได้รับอนุมัติแล้ว"
     },
-    reportingSummary: `Ads Performance AI predicts ${lowCtr.toFixed(1)}%-${highCtr.toFixed(1)}% CTR potential for the Mother-and-baby TikTok Campaign if checklist framing remains prominent.`,
+    reportingSummary: `Ads Performance AI ประเมินว่า Mother-and-baby TikTok Campaign มีโอกาสได้ CTR ประมาณ ${lowCtr.toFixed(1)}%-${highCtr.toFixed(1)}% หากยังใช้มุม checklist เป็นแกนหลัก`,
     learningSignals: [
-      hasChecklistAngle ? "Checklist framing is a positive paid-test signal." : "Campaign needs a sharper paid click trigger.",
-      "Parent audience needs trust-building and evidence-sensitive copy.",
-      "Creative variants should be evaluated by CTR, saves, comments, and qualified messages."
+      hasChecklistAngle ? "มุม checklist เป็นสัญญาณบวกสำหรับ paid test" : "แคมเปญควรมีจุดดึงคลิกที่คมขึ้นก่อน paid test",
+      "กลุ่มพ่อแม่ต้องการ copy ที่สร้างความเชื่อมั่นและระวังการกล่าวอ้าง",
+      "ควรวัด creative variants ด้วย CTR, saves, comments และข้อความสอบถามที่มีคุณภาพ"
     ],
     governanceNotes: [
-      "No live ad spend executed.",
-      "No external platform action performed.",
-      "Claims and budget changes require explicit approval before activation."
+      "ยังไม่มีการใช้เงินโฆษณาจริง",
+      "ยังไม่มีการดำเนินการบนแพลตฟอร์มภายนอก",
+      "คำกล่าวอ้างและการเปลี่ยนงบต้องได้รับอนุมัติชัดเจนก่อนใช้งานจริง"
     ]
   };
 }

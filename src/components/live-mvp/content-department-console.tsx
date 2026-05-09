@@ -144,13 +144,13 @@ const criteria: Array<{ key: QualityCriterion; label: string; weight: string }> 
 ];
 
 const typeLabels: Record<ReviewItemType, string> = {
-  hook: "Hook",
-  caption: "Caption",
-  script: "Script",
+  hook: "ฮุกเปิดคลิป",
+  caption: "แคปชัน",
+  script: "สคริปต์",
   cta: "CTA",
-  thumbnail: "Thumbnail",
-  shooting_note: "Shooting note",
-  hashtag: "Hashtag"
+  thumbnail: "ข้อความหน้าปก",
+  shooting_note: "แนวทางถ่ายทำ",
+  hashtag: "แฮชแท็ก"
 };
 
 const statusLabels = {
@@ -224,7 +224,7 @@ export function ContentDepartmentConsole() {
         body: JSON.stringify({
           runKey: result.runKey,
           decision,
-          approvalNotes: decision === "approved" ? "Human approved the production content pack." : "Human requested changes after production content pack review.",
+          approvalNotes: decision === "approved" ? "ผู้รีวิวอนุมัติชุดคอนเทนต์สำหรับใช้งานต่อ" : "ผู้รีวิวขอแก้ไขหลังตรวจชุดคอนเทนต์",
           outputScore: reviewSummary.overallScore,
           thumbs,
           workflowSatisfaction,
@@ -293,7 +293,7 @@ export function ContentDepartmentConsole() {
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <Play size={17} className="text-blue-600" />
-                Campaign Brief
+                บรีฟแคมเปญ
               </div>
               <label className="text-xs font-medium text-slate-500">สินค้า</label>
               <input value={productName} onChange={(event) => setProductName(event.target.value)} className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
@@ -304,7 +304,7 @@ export function ContentDepartmentConsole() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button onClick={startWorkflow} disabled={Boolean(loading)} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60">
                   {loading === "start" ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                  สร้าง Content Pack
+                  สร้างชุดคอนเทนต์
                 </button>
                 <button onClick={refreshSnapshot} disabled={Boolean(loading)} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 disabled:opacity-60">
                   <RefreshCw size={16} />
@@ -318,22 +318,22 @@ export function ContentDepartmentConsole() {
           </div>
 
           <div className="space-y-5">
-            <ConsolePanel title="Campaign Summary" empty={!result} emptyText="เริ่ม workflow เพื่อดูมุมแคมเปญและ insight ของกลุ่มเป้าหมาย">
+            <ConsolePanel title="สรุปแคมเปญ" empty={!result} emptyText="เริ่ม workflow เพื่อดูมุมแคมเปญและ insight ของกลุ่มเป้าหมาย">
               {result ? (
                 <div className="grid gap-4 xl:grid-cols-2">
-                  <InfoBlock title="Campaign angle" items={[result.contentPack.campaignAngle]} />
-                  <InfoBlock title="Target audience insight" items={[result.contentPack.targetAudienceInsight]} />
-                  <InfoBlock title="Marketing AI signals" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
-                  <InfoBlock title="Ads review" items={[result.adsPerformance.ctrPrediction.rationale, ...result.adsPerformance.optimizationSuggestions.slice(0, 2)]} />
+                  <InfoBlock title="มุมแคมเปญ" items={[result.contentPack.campaignAngle]} />
+                  <InfoBlock title="Insight กลุ่มเป้าหมาย" items={[result.contentPack.targetAudienceInsight]} />
+                  <InfoBlock title="สัญญาณจาก Marketing AI" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
+                  <InfoBlock title="รีวิวจาก Ads Performance AI" items={[result.adsPerformance.ctrPrediction.rationale, ...result.adsPerformance.optimizationSuggestions.slice(0, 2)]} />
                 </div>
               ) : null}
             </ConsolePanel>
 
-            <ConsolePanel title="Content Pack" empty={!result} emptyText="ระบบจะแสดง Hooks, Captions, Scripts, CTA, Thumbnail, Shooting Notes และ Hashtags หลังสร้างแพ็ก">
+            <ConsolePanel title="ชุดคอนเทนต์" empty={!result} emptyText="ระบบจะแสดง hooks, captions, scripts, CTA, ข้อความหน้าปก, แนวทางถ่ายทำ และแฮชแท็กหลังสร้างแพ็ก">
               {result ? <ContentPackView pack={result.contentPack} /> : null}
             </ConsolePanel>
 
-            <ConsolePanel title="Review & Approval" empty={!result} emptyText="การ์ดรีวิวจะถูกสร้างจากทุก output ใน Content Pack">
+            <ConsolePanel title="รีวิวและอนุมัติ" empty={!result} emptyText="การ์ดรีวิวจะถูกสร้างจากทุก output ในชุดคอนเทนต์">
               <div className="space-y-4">
                 {reviews.map((review, index) => (
                   <ReviewCard key={`${review.outputType}-${review.outputIndex}`} review={review} index={index} onUpdate={updateReview} onScore={updateReviewScore} />
@@ -367,7 +367,7 @@ export function ContentDepartmentConsole() {
                       </div>
                     </div>
                     <label className="grid gap-2 text-xs font-medium text-slate-500">
-                      Feedback notes
+                      หมายเหตุรีวิว
                       <textarea value={qualityNotes} onChange={(event) => setQualityNotes(event.target.value)} rows={3} className="resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="สรุปว่าแพ็กนี้ใช้ได้ตรงไหน ควรเลี่ยง pattern ไหน" />
                     </label>
                     <label className="grid gap-2 text-xs font-medium text-slate-500">
@@ -401,13 +401,13 @@ export function ContentDepartmentConsole() {
 function ContentPackView({ pack }: { pack: ContentPack }) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      <OutputCard title="Hooks" items={pack.hooks} />
-      <OutputCard title="Captions" items={pack.captions.map((caption) => `${caption.caption}\n${caption.hashtags.join(" ")}`)} />
-      <OutputCard title="Scripts" items={pack.scripts.map((script) => `${script.title}\n${script.scenes.join("\n")}`)} />
+      <OutputCard title="ฮุกเปิดคลิป" items={pack.hooks} />
+      <OutputCard title="แคปชัน" items={pack.captions.map((caption) => `${caption.caption}\n${caption.hashtags.join(" ")}`)} />
+      <OutputCard title="สคริปต์" items={pack.scripts.map((script) => `${script.title}\n${script.scenes.join("\n")}`)} />
       <OutputCard title="CTA" items={pack.ctaOptions} />
-      <OutputCard title="Thumbnail text ideas" items={pack.thumbnailTextIdeas} />
-      <OutputCard title="Shooting Notes" items={pack.shootingDirection} />
-      <OutputCard title="Hashtags" items={pack.hashtagSuggestions} />
+      <OutputCard title="ข้อความหน้าปก" items={pack.thumbnailTextIdeas} />
+      <OutputCard title="แนวทางถ่ายทำ" items={pack.shootingDirection} />
+      <OutputCard title="แฮชแท็ก" items={pack.hashtagSuggestions} />
       <QualityScoreList scores={pack.qualityScores} />
     </div>
   );
@@ -466,7 +466,7 @@ function ReviewCard({ review, index, onUpdate, onScore }: { review: PackReview; 
           <p className="text-xs font-medium text-blue-700">
             {typeLabels[review.outputType]} #{review.outputIndex + 1}
           </p>
-          <h3 className="mt-1 whitespace-pre-line text-sm font-semibold leading-6 text-slate-950">{review.text}</h3>
+          <h3 className="mt-1 whitespace-pre-line break-words text-sm font-semibold leading-6 text-slate-950">{review.text}</h3>
         </div>
         <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${review.decision === "approved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
           {score}/10
@@ -509,7 +509,7 @@ function QualitySummaryCard({ summary, snapshot, pack }: { summary: ReturnType<t
   const apiQuality = snapshot?.contentDepartment.qualityReviewSummary;
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-950">Quality Scores</h2>
+      <h2 className="text-sm font-semibold text-slate-950">คะแนนคุณภาพ</h2>
       <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
         <SummaryStat label="คะแนนรีวิวรวม" value={summary.overallScore ? `${summary.overallScore}/10` : "-"} />
         <SummaryStat label="อนุมัติ" value={summary.approvedCount} />
@@ -518,17 +518,17 @@ function QualitySummaryCard({ summary, snapshot, pack }: { summary: ReturnType<t
       </div>
       {pack ? (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-          System pre-score: {pack.packSummary.averageQualityScore}/10 จาก {pack.packSummary.totalReviewableItems} รายการ
+          คะแนนประเมินจากระบบ: {pack.packSummary.averageQualityScore}/10 จาก {pack.packSummary.totalReviewableItems} รายการ
         </div>
       ) : null}
       {apiQuality ? (
         <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-          Dashboard API บันทึกคะแนนล่าสุด {apiQuality.overallScore}/10 ({apiQuality.qualityCategory}) จาก {apiQuality.reviewedOutputCount} output
+          Dashboard API บันทึกคะแนนล่าสุด {apiQuality.overallScore}/10 ({apiQuality.qualityCategory}) จาก {apiQuality.reviewedOutputCount} รายการ
         </div>
       ) : null}
       {snapshot?.contentDepartment.memoryCurationSummary ? (
         <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-800">
-          Memory updates: approved {snapshot.contentDepartment.memoryCurationSummary.approvedPatternCount}, rejected {snapshot.contentDepartment.memoryCurationSummary.rejectedPatternCount}, insights {snapshot.contentDepartment.memoryCurationSummary.reviewerInsightCount}
+          Memory updates: ผ่าน {snapshot.contentDepartment.memoryCurationSummary.approvedPatternCount}, ต้องปรับ {snapshot.contentDepartment.memoryCurationSummary.rejectedPatternCount}, insight {snapshot.contentDepartment.memoryCurationSummary.reviewerInsightCount}
         </div>
       ) : null}
     </div>
@@ -569,7 +569,7 @@ function OutputCard({ title, items }: { title: string; items: string[] }) {
       <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
       <div className="mt-3 space-y-3">
         {items.map((item, index) => (
-          <div key={`${title}-${index}`} className="whitespace-pre-line rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
+          <div key={`${title}-${index}`} className="whitespace-pre-line break-words rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
             <span className="mb-1 block text-xs font-medium text-blue-700">#{index + 1}</span>
             {item}
           </div>
@@ -582,10 +582,10 @@ function OutputCard({ title, items }: { title: string; items: string[] }) {
 function QualityScoreList({ scores }: { scores: ContentPack["qualityScores"] }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <h3 className="text-sm font-semibold text-slate-950">System Quality Scores</h3>
+      <h3 className="text-sm font-semibold text-slate-950">คะแนนคุณภาพจากระบบ</h3>
       <div className="mt-3 space-y-2">
         {scores.slice(0, 12).map((score) => (
-          <div key={score.itemId} className="rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
+          <div key={score.itemId} className="break-words rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
             <div className="flex items-center justify-between gap-3">
               <span className="font-medium text-slate-950">{typeLabels[score.outputType]} #{score.outputIndex + 1}</span>
               <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">{score.score}/10</span>
@@ -604,7 +604,7 @@ function InfoBlock({ title, items }: { title: string; items: string[] }) {
       <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
       <ul className="mt-3 space-y-2">
         {items.map((item, index) => (
-          <li key={`${title}-${index}`} className="text-sm leading-6 text-slate-700">
+          <li key={`${title}-${index}`} className="break-words text-sm leading-6 text-slate-700">
             {item}
           </li>
         ))}

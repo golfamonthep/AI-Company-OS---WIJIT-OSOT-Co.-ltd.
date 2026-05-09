@@ -99,9 +99,9 @@ export function buildProductionContentPack(input: ContentPackInput): ProductionC
       averageQualityScore,
       readyForHumanReview: true,
       governanceNotes: [
-        "Human approval is required before external publishing.",
-        "Avoid unsupported medical, safety, or performance claims.",
-        "Approved items can become successful pattern memory; rejected items become weak pattern memory."
+        "ต้องให้มนุษย์อนุมัติก่อนนำไปเผยแพร่ภายนอก",
+        "หลีกเลี่ยงคำกล่าวอ้างด้านสุขภาพ ความปลอดภัย หรือผลลัพธ์ที่ไม่มีหลักฐานรองรับ",
+        "รายการที่อนุมัติจะใช้เป็น pattern ที่ดีได้ ส่วนรายการที่ปฏิเสธจะใช้เป็นบทเรียนสำหรับปรับปรุง"
       ]
     }
   };
@@ -274,11 +274,11 @@ function scoreItem(outputType: ContentPackItemType, outputIndex: number, text: s
 }
 
 function buildRationale(flags: { hasThai: boolean; isSpecific: boolean; hasCta: boolean; hasUnsupportedClaim: boolean; isTooLongHook: boolean }) {
-  if (flags.hasUnsupportedClaim) return "Needs review because it may imply unsupported results or exaggerated claims.";
-  if (flags.isTooLongHook) return "Useful idea, but the hook should be shorter for TikTok retention.";
-  if (flags.hasThai && flags.isSpecific) return "Clear Thai business wording with audience-specific usefulness.";
-  if (flags.hasCta) return "Clear action prompt for the viewer.";
-  return "Usable draft that needs human review for Thai naturalness and business fit.";
+  if (flags.hasUnsupportedClaim) return "ควรรีวิวเพิ่ม เพราะข้อความอาจสื่อถึงผลลัพธ์หรือคำกล่าวอ้างที่ยังไม่มีหลักฐานรองรับ";
+  if (flags.isTooLongHook) return "ไอเดียใช้ได้ แต่ฮุกควรสั้นลงเพื่อให้เหมาะกับการดึงคนดูบน TikTok";
+  if (flags.hasThai && flags.isSpecific) return "ภาษาไทยชัดเจนและเชื่อมกับกลุ่มเป้าหมายได้ดี";
+  if (flags.hasCta) return "มีคำชวนให้ผู้ชมทำต่อชัดเจน";
+  return "เป็นร่างที่ใช้ต่อได้ แต่ควรให้มนุษย์รีวิวความเป็นธรรมชาติและความเหมาะสมกับธุรกิจก่อน";
 }
 
 function summarizeAudienceInsight(marketing: ContentPackInput["marketing"], targetAudience: string) {
