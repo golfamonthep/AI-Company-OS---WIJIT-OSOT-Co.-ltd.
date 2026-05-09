@@ -1,0 +1,93 @@
+{
+  "input": {
+    "organizationId": "org-quality-1778316698024",
+    "brief": "Generate 10 TikTok hooks for a Thai mother-and-baby product",
+    "productName": "ผลิตภัณฑ์แม่และเด็ก",
+    "targetAudience": "คุณแม่ไทย",
+    "channel": "tiktok",
+    "contentGoal": "engagement",
+    "tone": "friendly",
+    "constraints": [
+      "Do not publish externally.",
+      "Do not make unsupported medical or performance claims.",
+      "Approved Hook Generation guidance: Use human-approved Thai hook patterns as examples before generating new hooks.",
+      "Approved Hook Generation guidance: Favor checklist, reassurance, and decision-support framing for mother-and-baby products.",
+      "Approved Hook Generation guidance: Keep claims conservative and route medical/product performance claims to human evidence review.",
+      "Reuse approved hook pattern when relevant: Before you choose, check this first.",
+      "Reuse approved hook pattern when relevant: If this problem keeps coming back, this may be why.",
+      "Reuse approved hook pattern when relevant: Most people miss this one simple detail.",
+      "Avoid rejected hook pattern: แม่หลายคนสบายใจขึ้นเมื่อรู้ว่าต้องเช็กอะไรบ้าง\nToo weak for retention.\nMake the hook more specific and natural.",
+      "Avoid rejected hook pattern: อย่าเพิ่งตัดสินใจ ถ้ายังไม่ได้ดูรายละเอียดข้อนี้\nToo weak for retention.\nMake the hook more specific and natural."
+    ]
+  },
+  "selectedSkills": [
+    "hook_generation",
+    "caption_writing",
+    "cta_generation",
+    "storytelling",
+    "tiktok_scripting"
+  ],
+  "output": {
+    "contentConcepts": [
+      {
+        "title": "Problem to solution",
+        "angle": "Show the real problem before introducing ผลิตภัณฑ์แม่และเด็ก.",
+        "audiencePain": "Audience needs clarity before taking action."
+      },
+      {
+        "title": "Checklist content",
+        "angle": "Give คุณแม่ไทย a simple way to decide if ผลิตภัณฑ์แม่และเด็ก is relevant.",
+        "audiencePain": "Audience is unsure what criteria matter."
+      },
+      {
+        "title": "Story proof",
+        "angle": "Use a simple before/after story without unsupported performance claims.",
+        "audiencePain": "Audience wants proof but dislikes hype."
+      }
+    ],
+    "hooks": [
+      "Before you choose, check this first.",
+      "If this problem keeps coming back, this may be why.",
+      "Most people miss this one simple detail."
+    ],
+    "scripts": [
+      {
+        "title": "30-second TikTok script",
+        "scenes": [
+          "0-3s: show the pain point clearly",
+          "4-10s: introduce ผลิตภัณฑ์แม่และเด็ก as a practical option",
+          "11-22s: explain the checklist or key insight",
+          "23-30s: invite viewer to message or comment"
+        ]
+      }
+    ],
+    "captions": [
+      {
+        "caption": "Generate 10 TikTok hooks for a Thai mother-and-baby product\n\nStart with the problem, check the fit, then choose the next step that makes sense for you.",
+        "hashtags": [
+          "#ContentMarketing",
+          "#ThaiBusiness",
+          "#ผลิตภัณฑ์แม่และเด็ก"
+        ]
+      }
+    ],
+    "ctas": [
+      "Comment for the checklist",
+      "Message us for details",
+      "Save this before you decide"
+    ],
+    "assumptions": [
+      "No real analytics data was provided.",
+      "Product facts need human/R&D confirmation before publishing.",
+      "Caption Writing: Output is missing field: recommended_caption",
+      "Caption Writing: Output is missing field: caption_notes",
+      "CTA Generation: Output is missing field: funnel_stage",
+      "Storytelling Framework: Output is missing field: emotional_trigger",
+      "TikTok Script Writing: Output is missing field: assumptions"
+    ],
+    "guardrailNotes": [
+      "Draft only. Not published.",
+      "No guaranteed performance claims included."
+    ]
+  }
+}

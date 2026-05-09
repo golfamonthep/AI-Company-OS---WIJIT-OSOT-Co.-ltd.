@@ -1,0 +1,8 @@
+{
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "env": {
+    "APP_ENV": "production",
+    "DEPLOYMENT_TARGET": "vercel"
+  }
+}

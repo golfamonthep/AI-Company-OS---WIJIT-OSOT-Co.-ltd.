@@ -1,0 +1,12 @@
+services:
+  ai-company-os:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../config/development.env.example
+    ports:
+      - "3000:3000"
+    environment:
+      DEPLOYMENT_TARGET: docker
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
