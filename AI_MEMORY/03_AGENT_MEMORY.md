@@ -7,6 +7,7 @@
 - The active dashboard implementation is in `src/dashboard`, not the older dark dashboard components in `src/components/dashboard`.
 - The live operational path is Content Department, especially `src/modules/live-mvp/content-department.ts`.
 - CEO AI currently exists as a deterministic adapter and API route. It is not yet the full command center.
+- `/dashboard` now starts with a CEO AI Command Center surface backed by `src/dashboard/ceo-command-center.ts`; keep using the live Content Department dashboard snapshot and approval queue instead of adding a parallel dashboard data path.
 - The app is designed to work without Supabase and OpenAI credentials in local demo mode.
 - Thai text may appear as mojibake in some PowerShell output; inspect files in an editor if exact Thai copy matters.
 

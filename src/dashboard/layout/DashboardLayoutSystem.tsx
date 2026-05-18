@@ -1,9 +1,6 @@
 "use client";
 
-import { Activity, Bell, Command, Lock, Radio, Search, ShieldCheck, Users } from "lucide-react";
-import { dashboardSections } from "@/dashboard/data";
-import { useControlCenterStore } from "@/dashboard/store";
-import type { DashboardSection } from "@/dashboard/types";
+import { Activity, Bell, Bot, BrainCircuit, CalendarDays, CheckCircle2, Command, Lock, MessageSquareText, Search, ShieldCheck, Users, UsersRound } from "lucide-react";
 import { IconButton, StatusPill } from "@/dashboard/components/dashboard-primitives";
 
 type DashboardWorkspaceSession = {
@@ -15,9 +12,16 @@ type DashboardWorkspaceSession = {
   mockedAuth: boolean;
 };
 
+const commandCenterSections = [
+  { id: "ceo-command", label: "คุยกับ CEO AI", icon: MessageSquareText },
+  { id: "ceo-plan", label: "แผนของ CEO AI", icon: CheckCircle2 },
+  { id: "delegated-agents", label: "ทีมที่มอบหมาย", icon: UsersRound },
+  { id: "approval-queue", label: "รออนุมัติ", icon: ShieldCheck },
+  { id: "daily-brief", label: "สรุปวันนี้", icon: CalendarDays },
+  { id: "memory", label: "ความจำ", icon: BrainCircuit }
+] as const;
+
 export function DashboardLayoutSystem({ children, workspaceSession }: { children: React.ReactNode; workspaceSession?: DashboardWorkspaceSession }) {
-  const activeSection = useControlCenterStore((state) => state.activeSection);
-  const setActiveSection = useControlCenterStore((state) => state.setActiveSection);
   const session = workspaceSession ?? {
     workspaceName: "Demo AI Company",
     role: "owner",
@@ -36,18 +40,17 @@ export function DashboardLayoutSystem({ children, workspaceSession }: { children
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-950">AI Company OS</p>
-            <p className="text-xs text-slate-500">ระบบปฏิบัติการบริษัท</p>
+            <p className="text-xs text-slate-500">CEO AI Command Center</p>
           </div>
         </div>
         <nav className="mt-8 flex flex-col gap-1">
-          {dashboardSections.map((item) => {
+          {commandCenterSections.map((item) => {
             const Icon = item.icon;
-            const selected = activeSection === item.id;
             return (
-              <button key={item.id} onClick={() => setActiveSection(item.id as DashboardSection)} className={`flex items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm font-medium transition ${selected ? "border-blue-200 bg-blue-50 text-blue-700" : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"}`}>
+              <a key={item.id} href={`#${item.id}`} className="flex items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950">
                 <Icon size={17} />
                 {item.label}
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -56,10 +59,10 @@ export function DashboardLayoutSystem({ children, workspaceSession }: { children
             <p className="text-xs text-slate-500">Current workspace</p>
             <p className="mt-1 text-sm font-semibold text-slate-950">{session.workspaceName}</p>
             <button type="button" disabled className="mt-3 w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-left text-xs font-medium text-slate-500">
-              เปลี่ยนพื้นที่ทำงาน
+              พื้นที่ทำงานปัจจุบัน
             </button>
           </div>
-          <StatusPill tone={session.readOnly ? "amber" : "green"}>{session.readOnly ? "โหมดอ่านอย่างเดียว" : "ควบคุมโดยมนุษย์"}</StatusPill>
+          <StatusPill tone={session.readOnly ? "amber" : "green"}>{session.readOnly ? "โหมดอ่านอย่างเดียว" : "มนุษย์อนุมัติก่อนเสมอ"}</StatusPill>
         </div>
       </aside>
       <section className="relative z-10 xl:pl-72">
@@ -70,13 +73,13 @@ export function DashboardLayoutSystem({ children, workspaceSession }: { children
                 <Command size={18} />
               </div>
               <div>
-                <h1 className="text-base font-semibold text-slate-950">แดชบอร์ด AI Company OS</h1>
-                <p className="text-xs text-slate-500">ภาพรวมงาน AI เวิร์กโฟลว์ และงานที่ต้องอนุมัติ</p>
+                <h1 className="text-base font-semibold text-slate-950">CEO AI Command Center</h1>
+                <p className="text-xs text-slate-500">คุยกับ CEO AI เพื่อดูแผน งานที่มอบหมาย และสิ่งที่ต้องอนุมัติ</p>
               </div>
             </div>
             <div className="flex min-h-10 flex-1 items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 lg:max-w-xl">
               <Search size={17} className="text-slate-400" />
-              <span className="text-sm text-slate-500">ค้นหาทีม AI เวิร์กโฟลว์ ความจำ หรือการอนุมัติ...</span>
+              <span className="text-sm text-slate-500">ถาม CEO AI เช่น วันนี้ฉันต้องตัดสินใจอะไรบ้าง...</span>
             </div>
             <div className="flex items-center gap-2">
               <StatusPill tone="cyan">
@@ -94,8 +97,8 @@ export function DashboardLayoutSystem({ children, workspaceSession }: { children
                 {session.mockedAuth ? "บัญชีตัวอย่าง" : session.userName}
               </StatusPill>
               <StatusPill tone="amber">
-                <Radio size={13} className="mr-1" />
-                {session.approvalAuthority.length ? "มีสิทธิ์อนุมัติ" : "ไม่มีสิทธิ์อนุมัติ"}
+                <Bot size={13} className="mr-1" />
+                {session.approvalAuthority.length ? "อนุมัติก่อนทำจริง" : "ยังไม่มีสิทธิ์อนุมัติ"}
               </StatusPill>
               <IconButton label="Notifications">
                 <Bell size={17} />

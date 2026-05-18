@@ -13,6 +13,12 @@ const riskTone = {
   high: "rose"
 } as const;
 
+const approvalStatusLabels: Record<ApprovalItem["status"], string> = {
+  requested: "รออนุมัติ",
+  approved: "อนุมัติแล้ว",
+  changes_requested: "ขอแก้ไข"
+};
+
 export function ApprovalQueuePanel({
   liveSnapshot,
   onSnapshotUpdated
@@ -64,7 +70,7 @@ export function ApprovalQueuePanel({
   }
 
   return (
-    <DashboardPanel>
+    <DashboardPanel id="approval-queue">
       <PanelHeader title="งานที่รออนุมัติ" description="รายการที่ต้องให้คนตรวจสอบก่อนนำผลลัพธ์ไปใช้ในงานจริง" action={<StatusPill tone="amber">{approvalItems.filter((item) => item.status === "requested").length} รออนุมัติ</StatusPill>} />
       <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-3">
@@ -76,8 +82,8 @@ export function ApprovalQueuePanel({
                   <p className="mt-1 text-xs text-slate-500">ผู้ขออนุมัติ: {approval.requester} / หมวดงาน: {approval.domain}</p>
                 </div>
                 <div className="flex gap-2">
-                  <StatusPill tone={riskTone[approval.risk]}>{approval.risk}</StatusPill>
-                  <StatusPill tone={approval.status === "approved" ? "green" : "amber"}>{approval.status}</StatusPill>
+                  <StatusPill tone={riskTone[approval.risk]}>{toThaiRisk(approval.risk)}</StatusPill>
+                  <StatusPill tone={approval.status === "approved" ? "green" : "amber"}>{approvalStatusLabels[approval.status]}</StatusPill>
                 </div>
               </div>
             </button>
