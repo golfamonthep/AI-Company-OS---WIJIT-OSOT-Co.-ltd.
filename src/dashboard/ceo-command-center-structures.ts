@@ -40,7 +40,7 @@ export const defaultCeoPlans: CeoPlanStructure[] = [
   {
     key: "offer-campaign-plan",
     label: "เสนอแผน",
-    step: "เสนอแผนแคมเปญ TikTok แม่และเด็ก",
+    step: "เสนอแผนแคมเปญ TikTok สำหรับแม่และเด็ก",
     owner: "CEO AI",
     status: "เสนอแผน",
     detail: "สรุปเป้าหมาย กลุ่มลูกค้า ข้อความหลัก และงานที่ต้องรออนุมัติก่อนเริ่มใช้จริง"
@@ -49,46 +49,46 @@ export const defaultCeoPlans: CeoPlanStructure[] = [
     key: "review-customer-angle",
     label: "วิเคราะห์ลูกค้า",
     step: "ตรวจมุมสื่อสารสำหรับคุณแม่มือใหม่",
-    owner: "Marketing AI",
+    owner: "ทีมวิเคราะห์ลูกค้า",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     detail: "เน้นความมั่นใจ ความปลอดภัย และคำแนะนำที่เข้าใจง่ายสำหรับการดูแลลูก"
   },
   {
     key: "draft-content-pack",
     label: "เตรียมคอนเทนต์",
-    step: "ร่าง hooks, captions และ script สั้น",
-    owner: "Content Creator AI",
+    step: "ร่างฮุก แคปชัน และสคริปต์สั้น",
+    owner: "ทีมคอนเทนต์",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
-    detail: "ทำเป็นชุดตรวจง่ายก่อนนำไปใช้ ไม่กล่าวอ้างเกินจริง และไม่เผยแพร่อัตโนมัติ"
+    detail: "ทำเป็นชุดตรวจง่ายก่อนนำไปใช้ ไม่กล่าวอ้างเกินจริง และไม่ถูกนำไปใช้เอง"
   },
   {
     key: "approval-before-use",
     label: "รออนุมัติ",
-    step: "รออนุมัติก่อนนำไปใช้ภายนอก",
+    step: "รออนุมัติก่อนใช้จริง",
     owner: "คุณ + CEO AI",
     status: "รออนุมัติ",
-    detail: "CEO AI ช่วยสรุปสิ่งที่ต้องตัดสินใจ แต่ผู้ใช้เป็นคนยืนยันก่อนดำเนินการ"
+    detail: "CEO AI ช่วยสรุปสิ่งที่ต้องตัดสินใจ แต่คุณเป็นคนยืนยันก่อนดำเนินการ"
   }
 ];
 
 export const defaultDelegatedTasks: DelegatedTaskStructure[] = [
   {
     key: "marketing-angle",
-    name: "Marketing AI",
+    name: "ทีมวิเคราะห์ลูกค้า",
     role: "ช่วยวิเคราะห์ลูกค้าและมุมสื่อสาร",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     currentWork: "เตรียมมุมแคมเปญสำหรับคุณแม่มือใหม่ที่ต้องการข้อมูลชัดเจนและน่าเชื่อถือ"
   },
   {
     key: "content-pack",
-    name: "Content Creator AI",
-    role: "ช่วยร่างคอนเทนต์ให้ CEO AI ตรวจ",
+    name: "ทีมคอนเทนต์",
+    role: "ช่วยร่างคอนเทนต์ให้ CEO AI ตรวจทาน",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
-    currentWork: "เตรียม hooks, captions และ scripts ที่รอผู้ใช้ตรวจยืนยันก่อนใช้จริง"
+    currentWork: "เตรียมฮุก แคปชัน และสคริปต์ที่รอคุณตรวจยืนยันก่อนใช้จริง"
   },
   {
     key: "ads-readiness",
-    name: "Ads Performance AI",
+    name: "ทีมประเมินโฆษณา",
     role: "ช่วยประเมินความพร้อมก่อนลงโฆษณา",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     currentWork: "เตรียมข้อควรระวังด้านงบ กลุ่มเป้าหมาย และความคาดหวังผลลัพธ์"
@@ -99,19 +99,19 @@ export const defaultApprovalStates: ApprovalStateStructure[] = [
   {
     key: "waiting-content-approval",
     label: "รออนุมัติ",
-    summary: "ชุดคอนเทนต์รอให้ผู้ใช้ตรวจข้อความก่อนนำไปใช้ภายนอก",
+    summary: "ชุดคอนเทนต์รอให้คุณตรวจข้อความก่อนใช้จริง",
     risk: "ปานกลาง"
   },
   {
     key: "waiting-budget-approval",
     label: "รออนุมัติ",
-    summary: "คำแนะนำด้านงบโฆษณาต้องรอผู้ใช้ยืนยันก่อนดำเนินการ",
+    summary: "คำแนะนำด้านงบโฆษณาต้องรอคุณยืนยันก่อนดำเนินการ",
     risk: "สูง"
   },
   {
     key: "approved-internal-note",
     label: "บันทึกหลังยืนยัน",
-    summary: "บทเรียนจากงานที่ผ่านการตรวจจะบันทึกหลังผู้ใช้ยืนยัน",
+    summary: "บทเรียนจากงานที่ผ่านการตรวจจะบันทึกหลังคุณยืนยัน",
     risk: "ต่ำ"
   }
 ];
@@ -122,38 +122,38 @@ export const defaultMemoryItems: MemoryItemStructure[] = [
     title: "น้ำเสียงสำหรับกลุ่มแม่และเด็ก",
     detail: "ใช้ภาษาง่าย อบอุ่น ไม่กดดัน และให้เหตุผลที่ตรวจสอบได้ก่อนชวนซื้อ",
     type: "brand",
-    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
+    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
   },
   {
     key: "approval-before-publishing",
-    title: "กฎก่อนเผยแพร่ภายนอก",
-    detail: "งานเผยแพร่ คำแนะนำใช้งบ และการติดต่อลูกค้าต้องรออนุมัติจากผู้ใช้ก่อน",
-    type: "governance",
-    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
+    title: "กฎก่อนนำงานไปใช้จริง",
+    detail: "ข้อความแคมเปญ คำแนะนำเรื่องงบ และการติดต่อลูกค้าต้องรอคุณอนุมัติก่อน",
+    type: "การอนุมัติ",
+    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
   },
   {
     key: "winning-content-angle",
     title: "มุมคอนเทนต์ที่ควรทดลอง",
-    detail: "แนว checklist และคำแนะนำแบบลดความกังวลเหมาะกับกลุ่มคุณแม่มือใหม่",
-    type: "campaign",
-    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
+    detail: "แนวทางแบบเช็กลิสต์และคำแนะนำที่ช่วยลดความกังวล เหมาะกับกลุ่มคุณแม่มือใหม่",
+    type: "แคมเปญ",
+    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
   }
 ];
 
 export const defaultDailyBriefItems: DailyBriefItemStructure[] = [
   {
     key: "sales-and-content-focus",
-    text: "วันนี้ควรดูยอดขายเบื้องต้นพร้อมแผนคอนเทนต์ที่ CEO AI เสนอแผนไว้",
+    text: "วันนี้ควรดูยอดขายเบื้องต้น พร้อมแผนคอนเทนต์ที่ CEO AI เสนอไว้",
     source: "CEO AI"
   },
   {
     key: "approval-first",
     text: "มีงานที่รออนุมัติให้ตรวจ ก่อนนำข้อความหรือคำแนะนำด้านงบไปใช้จริง",
-    source: "Approval"
+    source: "การอนุมัติ"
   },
   {
     key: "memory-after-confirmation",
-    text: "สิ่งที่เรียนรู้จากรอบนี้จะบันทึกเป็นความจำหลังผู้ใช้ยืนยัน",
-    source: "Memory"
+    text: "บทเรียนจากรอบนี้จะถูกบันทึกหลังคุณยืนยันเท่านั้น",
+    source: "บทเรียน"
   }
 ];

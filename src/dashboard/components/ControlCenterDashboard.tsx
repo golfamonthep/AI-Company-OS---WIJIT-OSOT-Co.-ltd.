@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Bot, BrainCircuit, CalendarDays, CheckCircle2, FileCheck2, RefreshCw, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
+import type { FormEvent } from "react";
+import { ArrowRight, Bot, BrainCircuit, CalendarDays, CheckCircle2, FileCheck2, RefreshCw, SendHorizontal, ShieldCheck, UsersRound } from "lucide-react";
 import { DashboardLayoutSystem } from "@/dashboard/layout/DashboardLayoutSystem";
 import { createCeoCommandCenterViewModel, type CeoCommandCenterViewModel } from "@/dashboard/ceo-command-center";
 import { createMockLiveDashboardSnapshot } from "@/dashboard/mock-snapshot";
@@ -66,22 +67,15 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
   return (
     <DashboardLayoutSystem workspaceSession={workspaceSession}>
       <div className="space-y-5 md:space-y-6">
-        <CeoCommandArea
-          viewModel={viewModel}
-          snapshotError={snapshotError}
-          lastUpdatedAt={lastUpdatedAt}
-          refreshing={refreshing}
-          onRefresh={refreshLiveSnapshot}
-        />
-        <div className="grid gap-5 md:gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(340px,0.88fr)]">
-          <div className="space-y-5 md:space-y-6">
-            <CeoPlanPanel viewModel={viewModel} />
-            <DelegatedAgentsPanel viewModel={viewModel} />
-          </div>
-          <div className="space-y-5 md:space-y-6">
-            <ApprovalPanel viewModel={viewModel} />
+        <CeoCommandArea viewModel={viewModel} snapshotError={snapshotError} lastUpdatedAt={lastUpdatedAt} refreshing={refreshing} onRefresh={refreshLiveSnapshot} />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+          <div className="space-y-5">
             <DailyBriefPanel viewModel={viewModel} />
-            <MemoryPanel viewModel={viewModel} />
+            <CeoPlanPanel viewModel={viewModel} />
+          </div>
+          <div className="space-y-5">
+            <ApprovalPanel viewModel={viewModel} />
+            <SupportPanel viewModel={viewModel} />
           </div>
         </div>
       </div>
@@ -102,153 +96,102 @@ function CeoCommandArea({
   refreshing: boolean;
   onRefresh: () => Promise<LiveDashboardSnapshot | null>;
 }) {
+  const [command, setCommand] = useState("วันนี้ฉันควรตัดสินใจเรื่องอะไรก่อน");
+  const [reply, setReply] = useState<string | null>(null);
+
+  function askCeoAi(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setReply(buildExecutiveReply(viewModel));
+  }
+
   return (
-    <section id="ceo-command" className="overflow-hidden rounded-lg border border-[#7DD3FC]/15 bg-[#0D111A] shadow-[0_28px_90px_rgba(0,0,0,0.34)]">
-      <div className="border-b border-white/[0.06] bg-[linear-gradient(135deg,rgba(18,24,38,0.96),rgba(13,17,26,0.92)_54%,rgba(125,211,252,0.08))] p-4 sm:p-6 lg:p-7">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+    <section id="ceo-command" className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)]">
+        <div className="border-b border-slate-200 p-5 sm:p-6 lg:border-b-0 lg:border-r lg:p-8">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
             {viewModel.systemBadges.map((badge) => (
-              <span key={badge} className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-[#9CA3AF]">
+              <span key={badge} className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1">
                 {badge}
               </span>
             ))}
           </div>
-          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-[#7DD3FC]/20 bg-[#121826] text-[#7DD3FC] shadow-[0_0_40px_rgba(125,211,252,0.08)]">
+          <div className="mt-5 flex items-start gap-4">
+            <div className="grid size-11 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
               <Bot size={22} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#7DD3FC]">CEO AI Command Center</p>
-              <h2 className="mt-2 max-w-4xl text-2xl font-semibold leading-tight tracking-normal text-[#F5F7FA] sm:text-3xl lg:text-4xl">{viewModel.headline}</h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#9CA3AF] sm:text-base">{viewModel.subheadline}</p>
+              <h2 className="max-w-3xl text-2xl font-semibold leading-tight tracking-normal text-slate-950 sm:text-3xl">{viewModel.headline}</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{viewModel.subheadline}</p>
             </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <a href={viewModel.primaryAction.href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">
+              {viewModel.primaryAction.label}
+              <ArrowRight size={15} />
+            </a>
+            <button
+              type="button"
+              onClick={() => void onRefresh()}
+              disabled={refreshing}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 disabled:opacity-60"
+            >
+              <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "กำลังอัปเดต" : "อัปเดตสถานะ"}
+            </button>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:justify-end">
-          <button
-            type="button"
-            onClick={() => void onRefresh()}
-            disabled={refreshing}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-white/[0.10] bg-[#121826] px-3 py-2 text-sm font-semibold text-[#F5F7FA] transition hover:border-[#7DD3FC]/35 hover:bg-[#182033] disabled:opacity-60 sm:min-h-10"
-          >
-            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "กำลังโหลด" : "รีเฟรช"}
+        <form onSubmit={askCeoAi} className="bg-slate-50/70 p-5 sm:p-6 lg:p-8">
+          <label htmlFor="ceo-command-input" className="text-sm font-semibold text-slate-950">
+            คุยกับ CEO AI
+          </label>
+          <textarea
+            id="ceo-command-input"
+            value={command}
+            onChange={(event) => setCommand(event.target.value)}
+            rows={4}
+            placeholder="เช่น สรุปสถานะวันนี้ และบอกว่างานไหนต้องให้ฉันอนุมัติก่อน"
+            className="mt-3 min-h-32 w-full resize-none rounded-md border border-slate-200 bg-white px-4 py-3 text-base leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {viewModel.commandPrompts.slice(0, 2).map((prompt, index) => (
+              <button
+                key={`${prompt}-${index}`}
+                type="button"
+                onClick={() => setCommand(prompt)}
+                className="inline-flex min-h-9 items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium leading-5 text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+          <button type="submit" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+            ส่งให้ CEO AI
+            <SendHorizontal size={15} />
           </button>
-          <a href={viewModel.primaryAction.href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#7DD3FC] px-3 py-2 text-sm font-semibold text-[#05070B] shadow-[0_14px_36px_rgba(125,211,252,0.18)] transition hover:bg-[#BAE6FD] sm:min-h-10">
-            {viewModel.primaryAction.label}
-            <ArrowRight size={15} />
-          </a>
-        </div>
-      </div>
-      </div>
 
-      <div className="p-4 sm:p-6 lg:p-7">
-      <div className="rounded-lg border border-[#7DD3FC]/20 bg-[#05070B] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_20px_70px_rgba(0,0,0,0.24)] sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-md border border-[#7DD3FC]/25 bg-[#121826] text-[#7DD3FC]">
-            <Sparkles size={17} />
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-medium text-slate-500">{reply ? "ข้อเสนอจาก CEO AI" : "CEO AI พร้อมช่วยสรุป"}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{reply ?? "พิมพ์คำถามหรือเลือกตัวอย่าง แล้ว CEO AI จะเสนอสิ่งที่ควรดูต่อแบบสั้น ชัดเจน และรอคุณตัดสินใจ"}</p>
           </div>
-          <div className="min-w-0 flex-1">
-            <label htmlFor="ceo-command-input" className="text-sm font-semibold text-[#F5F7FA]">
-              พิมพ์สิ่งที่อยากให้ CEO AI ช่วยบริหาร
-            </label>
-            <textarea
-              id="ceo-command-input"
-              rows={4}
-              placeholder="เช่น ช่วยสรุปสถานะวันนี้ และบอกว่างานไหนต้องให้ฉันอนุมัติก่อน"
-              className="mt-3 min-h-36 w-full resize-none rounded-md border border-white/[0.09] bg-[#0D111A] px-4 py-3 text-base leading-7 text-[#F5F7FA] outline-none transition placeholder:text-[#6B7280] focus:border-[#7DD3FC]/55 focus:ring-2 focus:ring-[#7DD3FC]/15 sm:min-h-32"
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-              {viewModel.commandPrompts.map((prompt, index) => (
-                <button key={`${prompt}-${index}`} type="button" className="inline-flex min-h-10 items-center rounded-md border border-white/[0.08] bg-[#121826] px-3 py-2 text-left text-xs font-medium leading-5 text-[#9CA3AF] transition hover:border-[#7DD3FC]/30 hover:text-[#F5F7FA] sm:min-h-8 sm:px-2.5 sm:py-1.5">
-                  {prompt}
-                </button>
-              ))}
-            </div>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            {lastUpdatedAt ? <span>อัปเดต {new Date(lastUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
+            {snapshotError ? <span className="text-amber-700">ใช้ข้อมูลตัวอย่างชั่วคราว</span> : null}
           </div>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#9CA3AF]">
-        {lastUpdatedAt ? <span>อัปเดต {new Date(lastUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
-        {snapshotError ? <span className="text-[#FBBF24]">{snapshotError}</span> : null}
-      </div>
+        </form>
       </div>
     </section>
   );
 }
 
-function CeoPlanPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
-  return (
-    <SectionShell id="ceo-plan" icon={<CheckCircle2 size={18} />} title="แผนของ CEO AI" description={viewModel.planPanel.summary}>
-      <ol className="space-y-3">
-        {viewModel.planPanel.items.map((item, index) => (
-          <li key={`${item.owner}-${item.step}`} className="grid gap-3 rounded-lg border border-white/[0.07] bg-[#0D111A] p-4 sm:grid-cols-[2rem_1fr_auto] sm:p-3">
-            <div className="grid size-8 place-items-center rounded-md border border-[#7DD3FC]/20 bg-[#121826] text-sm font-semibold text-[#7DD3FC]">{index + 1}</div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#F5F7FA]">{item.step}</p>
-              <p className="mt-1 text-sm leading-6 text-[#9CA3AF]">{item.detail}</p>
-              <p className="mt-1 text-xs text-[#6B7280]">ผู้รับผิดชอบ: {item.owner}</p>
-            </div>
-            <span className="h-fit rounded-md border border-white/[0.08] bg-[#121826] px-2.5 py-1 text-xs font-medium text-[#9CA3AF] sm:justify-self-end">{item.status}</span>
-          </li>
-        ))}
-      </ol>
-    </SectionShell>
-  );
-}
-
-function DelegatedAgentsPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
-  return (
-    <SectionShell id="delegated-agents" icon={<UsersRound size={18} />} title="ทีม AI ที่ CEO AI มอบหมาย" description={viewModel.teamStatus}>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-3">
-        {viewModel.delegatedAgents.map((agent) => (
-          <article key={agent.name} className="rounded-lg border border-white/[0.07] bg-[#0D111A] p-4 sm:p-3">
-            <p className="text-sm font-semibold text-[#F5F7FA]">{agent.name}</p>
-            <p className="mt-1 text-xs text-[#6B7280]">{agent.role}</p>
-            <p className="mt-3 text-sm font-medium text-[#34D399]">{agent.status}</p>
-            <p className="mt-1 text-sm leading-6 text-[#9CA3AF]">{agent.currentWork}</p>
-          </article>
-        ))}
-      </div>
-    </SectionShell>
-  );
-}
-
-function ApprovalPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
-  return (
-    <SectionShell id="approval-queue" icon={<ShieldCheck size={18} />} title="งานที่รออนุมัติ" description={viewModel.approvalPanel.summary}>
-      <div className="mb-3 flex flex-col gap-3 rounded-lg border border-[#7DD3FC]/15 bg-[#121826] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-3">
-        <p className="text-sm font-semibold text-[#F5F7FA]">{viewModel.approvalPanel.count} รายการต้องตัดสินใจ</p>
-        <a href="/workflows/content-department" className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#7DD3FC] px-4 py-2.5 text-sm font-semibold text-[#05070B] transition hover:bg-[#BAE6FD] sm:min-h-9 sm:w-auto sm:px-3 sm:py-2 sm:text-xs">
-          {viewModel.approvalPanel.primaryLabel}
-        </a>
-      </div>
-      <div className="space-y-2">
-        {viewModel.approvalPanel.items.map((item) => (
-          <article key={`${item.requester}-${item.title}`} className="rounded-lg border border-white/[0.07] bg-[#0D111A] p-4 sm:p-3">
-            <p className="text-sm font-semibold text-[#F5F7FA]">{item.title}</p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-[#9CA3AF]">
-              <span>ผู้ขอ: {item.requester}</span>
-              <span>ความเสี่ยง: {item.risk}</span>
-              <span>สถานะ: {item.status}</span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </SectionShell>
-  );
-}
-
 function DailyBriefPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   return (
-    <SectionShell id="daily-brief" icon={<CalendarDays size={18} />} title="สรุปวันนี้" description={viewModel.dailyBrief.summary}>
-      <ul className="space-y-2">
-        {viewModel.dailyBrief.items.map((item, index) => (
-          <li key={`${item}-${index}`} className="flex gap-3 text-sm leading-6 text-[#9CA3AF]">
-            <FileCheck2 className="mt-1 shrink-0 text-[#34D399]" size={15} />
+    <SectionShell id="daily-brief" icon={<CalendarDays size={18} />} title="สรุปสำหรับวันนี้" description={viewModel.dailyBrief.summary}>
+      <ul className="space-y-3">
+        {viewModel.dailyBrief.items.slice(0, 4).map((item, index) => (
+          <li key={`${item}-${index}`} className="flex gap-3 text-sm leading-6 text-slate-700">
+            <FileCheck2 className="mt-1 shrink-0 text-emerald-600" size={15} />
             <span>{item}</span>
           </li>
         ))}
@@ -257,19 +200,87 @@ function DailyBriefPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }
   );
 }
 
-function MemoryPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
+function CeoPlanPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   return (
-    <SectionShell id="memory" icon={<BrainCircuit size={18} />} title="ความจำที่ CEO AI ใช้" description={viewModel.memoryPanel.summary}>
-      <div className="space-y-2">
-        {viewModel.memoryPanel.items.map((item, index) => (
-          <article key={`${item.type}-${item.title}-${index}`} className="rounded-lg border border-white/[0.07] bg-[#0D111A] p-4 sm:p-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <p className="text-sm font-semibold text-[#F5F7FA]">{item.title}</p>
-              <span className="w-fit rounded-md border border-white/[0.08] bg-[#121826] px-2 py-0.5 text-xs text-[#9CA3AF]">{item.type}</span>
+    <SectionShell id="ceo-plan" icon={<CheckCircle2 size={18} />} title="แผนที่ CEO AI เสนอ" description={viewModel.planPanel.summary}>
+      <ol className="divide-y divide-slate-100">
+        {viewModel.planPanel.items.map((item, index) => (
+          <li key={`${item.owner}-${item.step}`} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[2rem_1fr]">
+            <div className="grid size-8 place-items-center rounded-md bg-blue-50 text-sm font-semibold text-blue-700">{index + 1}</div>
+            <div className="min-w-0">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <p className="text-sm font-semibold text-slate-950">{item.step}</p>
+                <span className="w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{item.status}</span>
+              </div>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{item.detail}</p>
             </div>
-            <p className="mt-2 text-sm leading-6 text-[#9CA3AF]">{item.detail}</p>
-          </article>
+          </li>
         ))}
+      </ol>
+    </SectionShell>
+  );
+}
+
+function ApprovalPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
+  const hasApprovals = viewModel.approvalPanel.count > 0;
+
+  return (
+    <SectionShell id="approval-queue" icon={<ShieldCheck size={18} />} title="เรื่องที่ต้องตัดสินใจ" description={viewModel.approvalPanel.summary}>
+      <div className={hasApprovals ? "rounded-lg border border-amber-200 bg-amber-50 p-4" : "rounded-lg border border-emerald-200 bg-emerald-50 p-4"}>
+        <p className={hasApprovals ? "text-2xl font-semibold text-amber-900" : "text-2xl font-semibold text-emerald-900"}>{viewModel.approvalPanel.count}</p>
+        <p className={hasApprovals ? "mt-1 text-sm leading-6 text-amber-800" : "mt-1 text-sm leading-6 text-emerald-800"}>
+          {hasApprovals ? "รายการรอให้คุณอนุมัติก่อนนำไปใช้จริง" : "ตอนนี้ยังไม่มีงานเร่งด่วนที่ต้องอนุมัติ"}
+        </p>
+        <a href="/workflows/content-department" className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50">
+          {hasApprovals ? "ไปตรวจงาน" : "ดูงานแคมเปญ"}
+        </a>
+      </div>
+      {hasApprovals ? (
+        <div className="mt-3 space-y-2">
+          {viewModel.approvalPanel.items.slice(0, 2).map((item) => (
+            <article key={`${item.requester}-${item.title}`} className="rounded-md border border-slate-200 bg-white p-3">
+              <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+              <p className="mt-1 text-xs text-slate-500">ความเสี่ยง {item.risk} · {item.status}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </SectionShell>
+  );
+}
+
+function SupportPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
+  return (
+    <SectionShell id="support-context" icon={<UsersRound size={18} />} title="ข้อมูลประกอบการเสนอแผน" description={viewModel.teamStatus}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">ทีมเบื้องหลัง</p>
+          <div className="mt-2 space-y-2">
+            {viewModel.delegatedAgents.slice(0, 3).map((agent) => (
+              <div key={agent.name} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-950">{agent.name}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{agent.currentWork}</p>
+                </div>
+                <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">{agent.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+            <BrainCircuit size={14} />
+            บทเรียนหลังยืนยัน
+          </div>
+          <div className="mt-2 space-y-2">
+            {viewModel.memoryPanel.items.slice(0, 2).map((item, index) => (
+              <article key={`${item.type}-${item.title}-${index}`} className="rounded-md border border-slate-200 bg-white p-3">
+                <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
     </SectionShell>
   );
@@ -289,15 +300,24 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="rounded-lg border border-white/[0.07] bg-[#121826] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)] sm:p-5 xl:p-4">
-      <div className="mb-4 flex items-start gap-3 sm:mb-5 xl:mb-4">
-        <div className="grid size-9 shrink-0 place-items-center rounded-md border border-[#7DD3FC]/20 bg-[#0D111A] text-[#7DD3FC]">{icon}</div>
+    <section id={id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-700">{icon}</div>
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-[#F5F7FA]">{title}</h3>
-          <p className="mt-1 text-sm leading-6 text-[#9CA3AF]">{description}</p>
+          <h3 className="text-base font-semibold text-slate-950">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
         </div>
       </div>
       {children}
     </section>
   );
+}
+
+function buildExecutiveReply(viewModel: CeoCommandCenterViewModel) {
+  if (viewModel.approvalPanel.count > 0) {
+    return `ตอนนี้ควรเริ่มจากงานที่รออนุมัติ ${viewModel.approvalPanel.count} รายการก่อน เพราะต้องให้คุณตัดสินใจก่อนนำไปใช้จริง หลังยืนยันแล้ว CEO AI จึงค่อยบันทึกบทเรียนและเดินงานถัดไป`;
+  }
+
+  const firstStep = viewModel.planPanel.items[0]?.step ?? "เริ่มแผนงานถัดไป";
+  return `วันนี้ยังไม่มีเรื่องเร่งด่วนที่ต้องอนุมัติ CEO AI เสนอให้เริ่มจาก "${firstStep}" แล้วให้ทีมเบื้องหลังเตรียมงานไว้ตรวจ ก่อนนำไปใช้จริง`;
 }

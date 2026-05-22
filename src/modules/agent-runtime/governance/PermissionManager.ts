@@ -1,4 +1,4 @@
-import type { AgentPermissionProfile, ApprovalDomain, GovernanceActionRequest, GovernanceEvaluation } from "@/modules/agent-runtime/governance/types";
+import type { AgentPermissionProfile, GovernanceActionRequest, GovernanceEvaluation } from "@/modules/agent-runtime/governance/types";
 
 const profiles: AgentPermissionProfile[] = [
   { agentId: "ceo", allowedWorkflows: ["content-production", "product-research", "ads-campaign", "weekly-business-review"], allowedHarnessTools: ["filesystem", "api"], canApprove: ["publishing", "campaign", "budget", "workflow"], canEscalateTo: ["human"], executionLimits: ["Final approval and strategic decisions"] },

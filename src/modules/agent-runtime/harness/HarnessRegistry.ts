@@ -1,4 +1,4 @@
-import type { HarnessCapability, HarnessModule, HarnessModuleId } from "@/modules/agent-runtime/harness/types";
+import type { HarnessCapability, HarnessExecutionContext, HarnessModule, HarnessModuleId, HarnessResult, HarnessTask } from "@/modules/agent-runtime/harness/types";
 import { APIHarness } from "@/modules/agent-runtime/harness/api/APIHarness";
 import { BrowserHarness } from "@/modules/agent-runtime/harness/browser/BrowserHarness";
 import { FileSystemHarness } from "@/modules/agent-runtime/harness/filesystem/FileSystemHarness";
@@ -6,11 +6,17 @@ import { MediaHarness } from "@/modules/agent-runtime/harness/media/MediaHarness
 import { NodeHarness } from "@/modules/agent-runtime/harness/node/NodeHarness";
 import { PythonHarness } from "@/modules/agent-runtime/harness/python/PythonHarness";
 
-export class HarnessRegistry {
-  private readonly modules = new Map<HarnessModuleId, HarnessModule<any, unknown>>();
+type RegisteredHarnessModule = {
+  moduleId: HarnessModuleId;
+  capabilities: HarnessCapability[];
+  execute: (task: HarnessTask, context: HarnessExecutionContext) => Promise<HarnessResult>;
+};
 
-  register(module: HarnessModule<any, unknown>) {
-    this.modules.set(module.moduleId, module);
+export class HarnessRegistry {
+  private readonly modules = new Map<HarnessModuleId, RegisteredHarnessModule>();
+
+  register<TInput, TOutput>(module: HarnessModule<TInput, TOutput>) {
+    this.modules.set(module.moduleId, module as unknown as RegisteredHarnessModule);
   }
 
   get(moduleId: HarnessModuleId) {

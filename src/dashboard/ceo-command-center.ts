@@ -90,12 +90,13 @@ export function createCeoCommandCenterViewModel(
     : department?.contentPack?.packSummary.totalReviewableItems ?? 0;
   const qualityScore = department?.qualityReviewSummary?.overallScore ?? department?.contentPack?.packSummary.averageQualityScore;
   const mainAlert = department?.operationalAlerts?.find((alert) => alert.level !== "info");
+  const businessAlert = mainAlert ? toBusinessAlert(mainAlert.detail) : null;
   const fallbackMode = snapshotStatus === "fallback";
   const approvalRequired = pendingApprovals > 0 || latestRun?.status === "waiting_approval";
   const approvalItems = department?.recentApprovals.length
     ? department.recentApprovals.map((approval) => ({
         title: approval.subject,
-        requester: approval.requester_agent_key,
+        requester: toTeamDisplayName(approval.requester_agent_key),
         risk: toThaiRisk(approval.metadata?.risk),
         status: toThaiStatus(approval.status)
       }))
@@ -111,7 +112,7 @@ export function createCeoCommandCenterViewModel(
     ? department.memoryUpdates.slice(0, 3).map((item) => ({
         title: item.title,
         detail: item.result_summary ?? item.content ?? defaultMemoryItems[0].detail,
-        type: item.memory_type ?? "company"
+        type: toMemoryTypeLabel(item.memory_type)
       }))
     : defaultMemoryItems.map((item) => ({
         title: item.title,
@@ -123,35 +124,35 @@ export function createCeoCommandCenterViewModel(
     : [defaultDailyBriefItems[2].text];
 
   const headline = approvalRequired
-    ? "CEO AI กำลังรอการตัดสินใจจากคุณ"
+    ? "CEO AI รอให้คุณตัดสินใจ"
     : activeRuns > 0
-      ? "CEO AI กำลังพาทีมทำงานให้คุณ"
-      : "CEO AI พร้อมช่วยคุณเริ่มงาน";
+      ? "CEO AI กำลังประสานงานให้คุณ"
+      : "เริ่มจากการคุยกับ CEO AI";
 
   const primaryAction = approvalRequired
-    ? { label: "ตรวจงานที่รออนุมัติ", href: "#approval-queue" }
-    : { label: "เริ่ม Content Department", href: "/workflows/content-production" };
+    ? { label: "ตรวจงานก่อนอนุมัติ", href: "#approval-queue" }
+    : { label: "ให้ CEO AI เสนอแผนแคมเปญ", href: "/workflows/content-production" };
 
   const systemBadges = [
-    snapshotStatus === "loading" ? "กำลังโหลดข้อมูล" : fallbackMode ? "ข้อมูลตัวอย่าง" : "ข้อมูลล่าสุด",
-    liveSnapshot?.workspace.persistenceMode === "supabase" ? "เชื่อมต่อ Supabase" : "โหมดสำรอง",
-    "Human approval required"
+    snapshotStatus === "loading" ? "กำลังอัปเดต" : fallbackMode ? "ข้อมูลตัวอย่าง" : "ข้อมูลล่าสุด",
+    "CEO AI เสนอแผนก่อน",
+    "คุณอนุมัติก่อนใช้จริง"
   ];
 
   const nextSteps = approvalRequired
-    ? [
-        "ตรวจและอนุมัติผลงานก่อนนำไปใช้ภายนอก",
-        "อ่านเหตุผลและความเสี่ยงจาก Governance Queue",
-        "ให้ CEO AI บันทึกบทเรียนหลังอนุมัติหรือขอแก้ไข"
-      ]
+      ? [
+          "ตรวจและอนุมัติผลงานก่อนนำไปใช้จริง",
+        "อ่านเหตุผลและความเสี่ยงแบบสั้นก่อนตัดสินใจ",
+          "ให้ CEO AI บันทึกบทเรียนหลังคุณยืนยัน"
+        ]
     : activeRuns > 0
       ? [
-          "รอทีม AI สรุปผลงานจาก workflow ที่กำลังรัน",
-          "ตรวจคุณภาพ hooks, captions และ scripts เมื่อสร้างเสร็จ",
-          "ตัดสินใจอนุมัติหรือขอแก้ไขก่อนเผยแพร่"
+          "รอทีมเบื้องหลังสรุปผลงานที่กำลังทำ",
+          "ตรวจคุณภาพฮุก แคปชัน และสคริปต์เมื่อพร้อม",
+          "ตัดสินใจอนุมัติหรือขอแก้ไขก่อนใช้จริง"
         ]
       : [
-          "เริ่ม Mother-and-baby TikTok Campaign workflow",
+          "เริ่มแคมเปญ TikTok สำหรับแม่และเด็ก",
           "ให้ CEO AI สรุปเป้าหมาย กลุ่มลูกค้า และข้อจำกัด",
           "ตรวจผลงานผ่านระบบอนุมัติก่อนใช้งานจริง"
         ];
@@ -168,33 +169,33 @@ export function createCeoCommandCenterViewModel(
     ],
     headline,
     subheadline: latestRun
-      ? `${department?.campaignName ?? "Content Department"} อยู่ในสถานะ ${toThaiStatus(latestRun.status)}`
-      : "สั่งงาน CEO AI แล้วให้ทีมเบื้องหลังช่วยทำ content, ads, approval, memory และ learning อย่างเป็นระบบ",
+      ? `${toCampaignName(department?.campaignName)} อยู่ในสถานะ ${toThaiStatus(latestRun.status)}`
+      : "CEO AI จะเสนอแผนก่อน ทีมเบื้องหลังช่วยเตรียมงาน และทุกคำแนะนำจะรอคุณอนุมัติก่อนใช้จริง",
     primaryAction,
-    secondaryAction: { label: "ดู workflow", href: "/workflows/content-department" },
+    secondaryAction: { label: "ดูงานแคมเปญ", href: "/workflows/content-department" },
     systemBadges,
     guardrail: mainAlert
-      ? `ยังไม่เผยแพร่ภายนอก: ${mainAlert.detail}`
+      ? `ยังไม่ถูกนำไปใช้จริง: ${businessAlert}`
       : fallbackMode
-        ? "ยังไม่เผยแพร่ภายนอก และยังต้องผ่านการอนุมัติจากมนุษย์ก่อน action สำคัญ"
-        : "ยังไม่เผยแพร่ภายนอก การ publish, spending และ external writes ต้องผ่าน approval เสมอ",
+        ? "ยังไม่ใช้กับลูกค้าจริง และงานสำคัญต้องรอคุณอนุมัติก่อน"
+        : "คำแนะนำ การใช้งบ และการติดต่อลูกค้าต้องรอคุณอนุมัติเสมอ",
     teamStatus:
       activeRuns > 0
-        ? `Content Department กำลังทำงาน ${activeRuns} งาน`
+        ? `ทีมคอนเทนต์กำลังทำงาน ${activeRuns} งาน`
         : approvalRequired
-          ? "Content Department ส่งงานให้ CEO AI รอคุณตรวจ"
-          : "Content Department พร้อมเริ่มงานถัดไป",
+          ? "ทีมคอนเทนต์ส่งงานให้ CEO AI รอคุณตรวจ"
+          : "ทีมคอนเทนต์พร้อมเริ่มงานถัดไป",
     nextSteps,
     commandPrompts: [
-      "ช่วยเสนอแผนสำหรับยอดขายเดือนนี้",
-      "ดูงานที่รออนุมัติและสรุปความเสี่ยงให้เข้าใจง่าย",
-      "เตรียมงานที่พร้อมดำเนินการเมื่อได้รับอนุมัติ"
+      "วันนี้ฉันควรตัดสินใจเรื่องอะไรก่อน",
+      "สรุปงานที่รออนุมัติให้เข้าใจง่าย",
+      "ช่วยเริ่มแคมเปญ TikTok สำหรับแม่และเด็ก"
     ],
     planPanel: {
       title: "แผนที่ CEO AI เสนอ",
       summary: latestRun
-        ? `แผนล่าสุดของ ${department?.campaignName ?? "Content Department"} อยู่ในสถานะ ${toThaiStatus(latestRun.status)}`
-        : "CEO AI เสนอแผนเป็นลำดับ และทุกงานภายนอกต้องรออนุมัติก่อนดำเนินการ",
+        ? `แผนล่าสุดของ ${toCampaignName(department?.campaignName)} อยู่ในสถานะ ${toThaiStatus(latestRun.status)}`
+        : "CEO AI เสนอแผนเป็นลำดับ และหยุดรอคุณก่อนนำไปใช้จริง",
       items: defaultCeoPlans.map((plan, index) => ({
         step: index === 0 && latestRun?.objective ? latestRun.objective : plan.step,
         owner: plan.owner,
@@ -215,17 +216,17 @@ export function createCeoCommandCenterViewModel(
       name: task.name,
       role: task.role,
       status:
-        task.name === "Marketing AI" && department?.marketingAnalysis
+        task.key === "marketing-angle" && department?.marketingAnalysis
           ? "เสนอแผน"
-          : task.name === "Content Creator AI" && generatedCount > 0
+          : task.key === "content-pack" && generatedCount > 0
             ? "รออนุมัติ"
             : task.status,
       currentWork:
-        task.name === "Marketing AI" && department?.marketingAnalysis?.segment
+        task.key === "marketing-angle" && department?.marketingAnalysis?.segment
           ? department.marketingAnalysis.segment
-          : task.name === "Content Creator AI" && generatedCount > 0
-            ? `${generatedCount} ชิ้นรออนุมัติจากผู้ใช้`
-            : task.name === "Ads Performance AI" && department?.adsPerformance?.reportingSummary
+          : task.key === "content-pack" && generatedCount > 0
+            ? `${generatedCount} ชิ้นรอคุณอนุมัติ`
+            : task.key === "ads-readiness" && department?.adsPerformance?.reportingSummary
               ? department.adsPerformance.reportingSummary
               : task.currentWork
     })),
@@ -233,51 +234,51 @@ export function createCeoCommandCenterViewModel(
       count: pendingApprovals,
       primaryLabel: approvalRequired ? "รออนุมัติ" : "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
       summary: approvalRequired
-        ? "มีงานที่ต้องให้คุณตัดสินใจก่อนนำไปใช้ภายนอก"
-        : "CEO AI จะแสดงงานที่เสนอแผนและรออนุมัติก่อนนำไปใช้จริง",
+        ? "มีงานที่ต้องให้คุณตัดสินใจก่อนใช้จริง"
+        : "ตอนนี้ยังไม่มีเรื่องเร่งด่วนที่ต้องอนุมัติ",
       items: approvalItems
     },
     dailyBrief: {
-      summary: mainAlert
-        ? mainAlert.detail
+      summary: businessAlert
+        ? businessAlert
         : approvalRequired
-          ? "วันนี้ควรเริ่มจากงานที่รออนุมัติ แล้วให้ CEO AI บันทึกบทเรียนหลังตัดสินใจ"
-          : "วันนี้ยังไม่มีเรื่องเร่งด่วน เริ่ม Content Department workflow ได้เมื่อพร้อม",
+          ? "วันนี้ควรเริ่มจากงานที่รออนุมัติ แล้วให้ CEO AI บันทึกบทเรียนหลังคุณยืนยัน"
+          : "วันนี้ยังไม่มีเรื่องเร่งด่วน เริ่มแคมเปญแรกได้เมื่อพร้อม",
       items: [
         ...defaultDailyBriefItems.map((item) => item.text),
         `งานรออนุมัติ ${pendingApprovals} รายการ`,
-        `workflow กำลังทำงาน ${activeRuns} งาน`,
+        `งานที่กำลังเดินอยู่ ${activeRuns} งาน`,
         `ผลงานพร้อมตรวจ ${generatedCount} ชิ้น`,
         ...learningItems
       ]
     },
     memoryPanel: {
-      summary: "ความจำที่ CEO AI ใช้ช่วยตัดสินใจในบริบทธุรกิจ",
+      summary: "บทเรียนที่ CEO AI จะใช้หลังคุณยืนยันแล้วเท่านั้น",
       items: memoryItems
     },
     priorities: [
       {
         label: "งานที่ต้องตัดสินใจ",
         value: `${pendingApprovals} รายการ`,
-        detail: pendingApprovals > 0 ? "มีงานรออนุมัติก่อนใช้ภายนอก" : "ยังไม่มีงานค้างอนุมัติ",
+        detail: pendingApprovals > 0 ? "มีงานรออนุมัติก่อนใช้จริง" : "ยังไม่มีงานค้างอนุมัติ",
         tone: pendingApprovals > 0 ? "amber" : "green"
       },
       {
         label: "งานที่กำลังเดิน",
         value: `${activeRuns} งาน`,
-        detail: latestRun?.run_key ?? "พร้อมเริ่ม workflow ใหม่",
+        detail: latestRun?.run_key ?? "พร้อมเริ่มงานใหม่",
         tone: activeRuns > 0 ? "cyan" : "slate"
       },
       {
         label: "ผลงานล่าสุด",
         value: generatedCount > 0 ? `${generatedCount} ชิ้น` : "ยังไม่มี",
-        detail: generatedCount > 0 ? "มี content pack ให้ตรวจ" : `${completedRuns} workflow เสร็จแล้ว`,
+        detail: generatedCount > 0 ? "มีชุดคอนเทนต์ให้ตรวจ" : `${completedRuns} งานเสร็จแล้ว`,
         tone: generatedCount > 0 ? "green" : "slate"
       },
       {
         label: "คุณภาพ/บทเรียน",
         value: qualityScore ? `${qualityScore}/10` : `${department?.learningEvents.length ?? 0} บันทึก`,
-        detail: qualityScore ? "คะแนน review ล่าสุด" : "ระบบจะเรียนรู้หลังมี feedback",
+        detail: qualityScore ? "คะแนนตรวจล่าสุด" : "บันทึกบทเรียนหลังคุณยืนยัน",
         tone: qualityScore && qualityScore < 7 ? "amber" : qualityScore ? "violet" : "slate"
       }
     ]
@@ -295,8 +296,55 @@ export function toThaiStatus(status: string) {
     completed: "เสร็จสิ้น",
     waiting_approval: "รออนุมัติ",
     changes_requested: "ขอแก้ไข",
+    revision_requested: "ขอแก้ไข",
+    rejected: "ไม่อนุมัติ",
     running: "กำลังทำงาน",
     failed: "ล้มเหลว"
   };
   return map[status] ?? status;
+}
+
+function toTeamDisplayName(value: string) {
+  const map: Record<string, string> = {
+    ceo: "CEO AI",
+    "ceo-ai": "CEO AI",
+    "marketing": "ทีมวิเคราะห์ลูกค้า",
+    "marketing-ai": "ทีมวิเคราะห์ลูกค้า",
+    "content-creator": "ทีมคอนเทนต์",
+    "content-creator-ai": "ทีมคอนเทนต์",
+    "ads-performance": "ทีมประเมินโฆษณา",
+    "ads-performance-ai": "ทีมประเมินโฆษณา",
+    "learning-system": "ระบบบันทึกบทเรียน"
+  };
+
+  return map[value] ?? value;
+}
+
+function toMemoryTypeLabel(value: string | undefined) {
+  const map: Record<string, string> = {
+    brand: "แบรนด์",
+    company: "บริษัท",
+    campaign: "แคมเปญ",
+    governance: "การอนุมัติ",
+    workflow: "งาน",
+    agent: "ทีม",
+    decision: "การตัดสินใจ"
+  };
+
+  return value ? map[value] ?? "บทเรียน" : "บทเรียน";
+}
+
+function toCampaignName(value: string | undefined) {
+  if (!value || value === "Content Department") return "แคมเปญคอนเทนต์";
+  if (value === "Mother-and-baby TikTok Campaign") return "แคมเปญ TikTok แม่และเด็ก";
+  return value;
+}
+
+function toBusinessAlert(detail: string) {
+  const technicalSignals = ["NEXT_PUBLIC_", "SUPABASE_", "env", "environment", "in-memory", "fallback", "service role"];
+  if (technicalSignals.some((signal) => detail.toLowerCase().includes(signal.toLowerCase()))) {
+    return "ตอนนี้ใช้ข้อมูลตัวอย่างสำหรับทดลอง ระบบจริงยังไม่ถูกเชื่อมต่อ";
+  }
+
+  return detail;
 }

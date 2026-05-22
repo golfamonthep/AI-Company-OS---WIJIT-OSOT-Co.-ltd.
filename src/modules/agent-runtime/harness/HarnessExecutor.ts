@@ -8,9 +8,9 @@ import type { HarnessResult, HarnessTask } from "@/modules/agent-runtime/harness
 export async function executeHarnessTask(task: HarnessTask, supabase: SupabaseClient | null = null): Promise<HarnessResult> {
   const startedAt = new Date().toISOString();
   const registry = createDefaultHarnessRegistry();
-  const module = registry.get(task.moduleId);
+  const harnessModule = registry.get(task.moduleId);
 
-  if (!module) {
+  if (!harnessModule) {
     const result = normalizeHarnessResult({
       taskId: taskId(),
       moduleId: task.moduleId,
@@ -43,7 +43,7 @@ export async function executeHarnessTask(task: HarnessTask, supabase: SupabaseCl
   let result: HarnessResult | undefined;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    result = await module.execute(task, { supabase, workspaceRoot: process.cwd() });
+    result = await harnessModule.execute(task, { supabase, workspaceRoot: process.cwd() });
     result = { ...result, attempts: attempt };
     if (result.status === "success" || result.status === "unsupported" || result.status === "denied") break;
   }

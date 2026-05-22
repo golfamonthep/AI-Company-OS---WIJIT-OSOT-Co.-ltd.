@@ -1,4 +1,4 @@
-import { BrainCircuit, Building2, Clapperboard, Coins, FlaskConical, Megaphone, PenLine, Settings2, ShieldCheck, Workflow } from "lucide-react";
+import { BrainCircuit, Clapperboard, Coins, FlaskConical, Megaphone, PenLine, Settings2, ShieldCheck, Workflow } from "lucide-react";
 
 export const companyOverview = [
   { label: "Neural workforce", value: "2", detail: "Autonomous agents online", trend: "CEO + Content" },

@@ -1,8 +1,6 @@
 import type { LiveDashboardSnapshot } from "@/dashboard/types";
 
 export function createMockLiveDashboardSnapshot(reason = "Dashboard API is unavailable."): LiveDashboardSnapshot {
-  const generatedAt = new Date().toISOString();
-
   return {
     workspace: {
       id: "mock-workspace",
