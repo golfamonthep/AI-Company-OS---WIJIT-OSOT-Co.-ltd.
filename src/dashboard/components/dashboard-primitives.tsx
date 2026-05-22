@@ -22,15 +22,15 @@ export function PanelHeader({ title, description, action }: { title: string; des
 
 export function StatusPill({ children, tone = "slate" }: { children: React.ReactNode; tone?: "cyan" | "green" | "amber" | "rose" | "violet" | "slate" }) {
   const tones = {
-    cyan: "border-blue-200 bg-blue-50 text-blue-700",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    rose: "border-rose-200 bg-rose-50 text-rose-700",
-    violet: "border-indigo-200 bg-indigo-50 text-indigo-700",
-    slate: "border-slate-200 bg-slate-50 text-slate-700"
+    cyan: "border-[#7DD3FC]/25 bg-[#7DD3FC]/10 text-[#7DD3FC]",
+    green: "border-[#34D399]/25 bg-[#34D399]/10 text-[#34D399]",
+    amber: "border-amber-300/25 bg-amber-300/10 text-amber-200",
+    rose: "border-rose-300/25 bg-rose-300/10 text-rose-200",
+    violet: "border-indigo-300/25 bg-indigo-300/10 text-indigo-200",
+    slate: "border-white/[0.08] bg-white/[0.04] text-[#9CA3AF]"
   };
 
-  return <span className={cn("inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex min-h-8 items-center rounded-md border px-2.5 py-1 text-xs font-medium", tones[tone])}>{children}</span>;
 }
 
 export function MiniProgress({ value, tone = "cyan" }: { value: number; tone?: "cyan" | "green" | "amber" | "rose" | "violet" }) {
@@ -52,7 +52,7 @@ export function MiniProgress({ value, tone = "cyan" }: { value: number; tone?: "
 
 export function IconButton({ children, label, className = "" }: { children: React.ReactNode; label: string; className?: string }) {
   return (
-    <button aria-label={label} title={label} className={cn("grid size-9 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700", className)}>
+    <button aria-label={label} title={label} className={cn("grid size-10 place-items-center rounded-md border border-white/[0.08] bg-[#0D111A] text-[#9CA3AF] transition hover:border-[#7DD3FC]/30 hover:bg-[#121826] hover:text-[#7DD3FC]", className)}>
       {children}
     </button>
   );
