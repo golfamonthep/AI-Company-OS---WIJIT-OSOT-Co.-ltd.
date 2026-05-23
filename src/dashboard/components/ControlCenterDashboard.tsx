@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowRight, Bot, BrainCircuit, CalendarDays, CheckCircle2, FileCheck2, RefreshCw, SendHorizontal, ShieldCheck, UsersRound } from "lucide-react";
 import { DashboardLayoutSystem } from "@/dashboard/layout/DashboardLayoutSystem";
+import { applyCeoApprovalDecision, submitCeoDashboardCommand } from "@/dashboard/ceo-command-client";
+import type { CeoApprovalDecision, CeoCommandPlanPreview } from "@/dashboard/ceo-command-client";
 import { createCeoCommandCenterViewModel, type CeoCommandCenterViewModel } from "@/dashboard/ceo-command-center";
 import { createMockLiveDashboardSnapshot } from "@/dashboard/mock-snapshot";
 import type { LiveDashboardSnapshot } from "@/dashboard/types";
@@ -23,7 +25,24 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [commandPlanPreview, setCommandPlanPreview] = useState<CeoCommandPlanPreview | null>(null);
   const viewModel = createCeoCommandCenterViewModel(liveSnapshot, snapshotStatus);
+  const displayedViewModel = commandPlanPreview
+    ? {
+        ...viewModel,
+        headline: "CEO AI เสนอแผนให้คุณตรวจ",
+        subheadline: commandPlanPreview.feedbackMessage ?? "แผนนี้ยังไม่ถูกนำไปใช้จริง ทีมเบื้องหลังจะเริ่มตามขั้นตอนหลังคุณตรวจและยืนยัน",
+        systemBadges: ["แผนจากคำสั่งล่าสุด", commandPlanPreview.statusLabel, "ยังไม่ดำเนินการภายนอก"],
+        teamStatus: "CEO AI แยกงานให้ทีมเบื้องหลังแล้ว รอคุณตรวจแผนก่อนดำเนินการ",
+        planPanel: commandPlanPreview.planPanel,
+        delegatedAgents: commandPlanPreview.delegatedAgents,
+        approvalPanel: commandPlanPreview.approvalPanel
+      }
+    : viewModel;
+
+  const updateApprovalDecision = useCallback((decision: CeoApprovalDecision) => {
+    setCommandPlanPreview((current) => (current ? applyCeoApprovalDecision(current, decision) : current));
+  }, []);
 
   const refreshLiveSnapshot = useCallback(async () => {
     setRefreshing(true);
@@ -67,15 +86,15 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
   return (
     <DashboardLayoutSystem workspaceSession={workspaceSession}>
       <div className="space-y-5 md:space-y-6">
-        <CeoCommandArea viewModel={viewModel} snapshotError={snapshotError} lastUpdatedAt={lastUpdatedAt} refreshing={refreshing} onRefresh={refreshLiveSnapshot} />
+        <CeoCommandArea viewModel={displayedViewModel} snapshotError={snapshotError} lastUpdatedAt={lastUpdatedAt} refreshing={refreshing} onRefresh={refreshLiveSnapshot} onPlanGenerated={setCommandPlanPreview} />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <div className="space-y-5">
-            <DailyBriefPanel viewModel={viewModel} />
-            <CeoPlanPanel viewModel={viewModel} />
+            <DailyBriefPanel viewModel={displayedViewModel} />
+            <CeoPlanPanel viewModel={displayedViewModel} />
           </div>
           <div className="space-y-5">
-            <ApprovalPanel viewModel={viewModel} />
-            <SupportPanel viewModel={viewModel} />
+            <ApprovalPanel viewModel={displayedViewModel} onApprovalDecision={commandPlanPreview ? updateApprovalDecision : undefined} approvalState={commandPlanPreview?.approvalState} />
+            <SupportPanel viewModel={displayedViewModel} />
           </div>
         </div>
       </div>
@@ -88,20 +107,37 @@ function CeoCommandArea({
   snapshotError,
   lastUpdatedAt,
   refreshing,
-  onRefresh
+  onRefresh,
+  onPlanGenerated
 }: {
   viewModel: CeoCommandCenterViewModel;
   snapshotError: string | null;
   lastUpdatedAt: string | null;
   refreshing: boolean;
   onRefresh: () => Promise<LiveDashboardSnapshot | null>;
+  onPlanGenerated: (preview: CeoCommandPlanPreview) => void;
 }) {
   const [command, setCommand] = useState("วันนี้ฉันควรตัดสินใจเรื่องอะไรก่อน");
   const [reply, setReply] = useState<string | null>(null);
+  const [commandStatus, setCommandStatus] = useState<"idle" | "sending" | "ready" | "error">("idle");
+  const [commandError, setCommandError] = useState<string | null>(null);
 
-  function askCeoAi(event: FormEvent<HTMLFormElement>) {
+  async function askCeoAi(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setReply(buildExecutiveReply(viewModel));
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand || commandStatus === "sending") return;
+
+    setCommandStatus("sending");
+    setCommandError(null);
+    try {
+      const result = await submitCeoDashboardCommand({ command: trimmedCommand });
+      setReply(result.reply);
+      onPlanGenerated(result.preview);
+      setCommandStatus("ready");
+    } catch (caught) {
+      setCommandStatus("error");
+      setCommandError(caught instanceof Error ? caught.message : "CEO AI ยังไม่สามารถรับคำสั่งนี้ได้");
+    }
   }
 
   return (
@@ -166,14 +202,14 @@ function CeoCommandArea({
               </button>
             ))}
           </div>
-          <button type="submit" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
-            ส่งให้ CEO AI
+          <button type="submit" disabled={commandStatus === "sending" || command.trim().length === 0} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+            {commandStatus === "sending" ? "กำลังให้ CEO AI วิเคราะห์งาน" : "ให้ CEO AI วิเคราะห์งาน"}
             <SendHorizontal size={15} />
           </button>
 
           <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
             <p className="text-xs font-medium text-slate-500">{reply ? "ข้อเสนอจาก CEO AI" : "CEO AI พร้อมช่วยสรุป"}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">{reply ?? "พิมพ์คำถามหรือเลือกตัวอย่าง แล้ว CEO AI จะเสนอสิ่งที่ควรดูต่อแบบสั้น ชัดเจน และรอคุณตัดสินใจ"}</p>
+            <p className={commandError ? "mt-2 text-sm leading-6 text-rose-700" : "mt-2 text-sm leading-6 text-slate-700"}>{commandError ?? reply ?? "พิมพ์คำถามหรือเลือกตัวอย่าง แล้ว CEO AI จะเสนอสิ่งที่ควรดูต่อแบบสั้น ชัดเจน และรอคุณตัดสินใจ"}</p>
           </div>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
             {lastUpdatedAt ? <span>อัปเดต {new Date(lastUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span> : null}
@@ -221,8 +257,18 @@ function CeoPlanPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   );
 }
 
-function ApprovalPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
+function ApprovalPanel({
+  viewModel,
+  onApprovalDecision,
+  approvalState
+}: {
+  viewModel: CeoCommandCenterViewModel;
+  onApprovalDecision?: (decision: CeoApprovalDecision) => void;
+  approvalState?: string;
+}) {
   const hasApprovals = viewModel.approvalPanel.count > 0;
+  const hasGeneratedPlan = Boolean(onApprovalDecision);
+  const approvalCompleted = approvalState === "อนุมัติแล้ว";
 
   return (
     <SectionShell id="approval-queue" icon={<ShieldCheck size={18} />} title="เรื่องที่ต้องตัดสินใจ" description={viewModel.approvalPanel.summary}>
@@ -235,6 +281,32 @@ function ApprovalPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) 
           {hasApprovals ? "ไปตรวจงาน" : "ดูงานแคมเปญ"}
         </a>
       </div>
+      {hasGeneratedPlan ? (
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => onApprovalDecision?.("approve")}
+            disabled={approvalCompleted}
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            อนุมัติแผน
+          </button>
+          <button
+            type="button"
+            onClick={() => onApprovalDecision?.("request_revision")}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:border-blue-200 hover:bg-blue-50"
+          >
+            ขอปรับแผน
+          </button>
+          <button
+            type="button"
+            onClick={() => onApprovalDecision?.("add_condition")}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+          >
+            เพิ่มเงื่อนไข
+          </button>
+        </div>
+      ) : null}
       {hasApprovals ? (
         <div className="mt-3 space-y-2">
           {viewModel.approvalPanel.items.slice(0, 2).map((item) => (
@@ -311,13 +383,4 @@ function SectionShell({
       {children}
     </section>
   );
-}
-
-function buildExecutiveReply(viewModel: CeoCommandCenterViewModel) {
-  if (viewModel.approvalPanel.count > 0) {
-    return `ตอนนี้ควรเริ่มจากงานที่รออนุมัติ ${viewModel.approvalPanel.count} รายการก่อน เพราะต้องให้คุณตัดสินใจก่อนนำไปใช้จริง หลังยืนยันแล้ว CEO AI จึงค่อยบันทึกบทเรียนและเดินงานถัดไป`;
-  }
-
-  const firstStep = viewModel.planPanel.items[0]?.step ?? "เริ่มแผนงานถัดไป";
-  return `วันนี้ยังไม่มีเรื่องเร่งด่วนที่ต้องอนุมัติ CEO AI เสนอให้เริ่มจาก "${firstStep}" แล้วให้ทีมเบื้องหลังเตรียมงานไว้ตรวจ ก่อนนำไปใช้จริง`;
 }

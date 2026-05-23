@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { runCEOCommand } from "@/modules/orchestration/ceo-workflow";
+import { CEOCommandService } from "@/modules/orchestration/ceo-command-service";
 
 const commandSchema = z.object({
   command: z.string().min(1),
   organizationId: z.string().optional(),
+  workspaceId: z.string().optional(),
   userId: z.string().optional()
 });
 
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "คำสั่งไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const result = await runCEOCommand(parsed.data);
-  return NextResponse.json(result);
+  const service = new CEOCommandService();
+  const plan = await service.createCEOPlanFromCommand(parsed.data);
+  return NextResponse.json({ ok: true, plan });
 }
