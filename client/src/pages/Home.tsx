@@ -1,25 +1,39 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
-
 /**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
+ * Home — บริษัท วิจิตรโอสถ จำกัด official landing page
+ *
+ * Design philosophy: Modern Clinical Apothecary
+ * - Off-white paper background (--paper) with sage and cream alt-sections
+ * - Lime green (--wijit) used as ACCENT, not flooded background
+ * - Editorial section numbers & mono trust info
+ * - Asymmetric, magazine-like flow:
+ *     01 Hero  →  02 About  →  03 Standards (dark)  →  04 Products  →
+ *     05 Channels (sage)  →  06 Contact  →  Footer (deep forest)
  */
-export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
 
+import SiteHeader from "@/components/SiteHeader";
+import Hero from "@/components/Hero";
+import AboutSection from "@/components/AboutSection";
+import StandardsSection from "@/components/StandardsSection";
+import ProductsSection from "@/components/ProductsSection";
+import ChannelsSection from "@/components/ChannelsSection";
+import ContactSection from "@/components/ContactSection";
+import SiteFooter from "@/components/SiteFooter";
+import FloatingChannels from "@/components/FloatingChannels";
+
+export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
+    <div className="min-h-screen flex flex-col bg-background">
+      <SiteHeader />
+      <main className="flex-1">
+        <Hero />
+        <AboutSection />
+        <StandardsSection />
+        <ProductsSection />
+        <ChannelsSection />
+        <ContactSection />
       </main>
+      <SiteFooter />
+      <FloatingChannels />
     </div>
   );
 }
