@@ -59,38 +59,38 @@ export default function AboutSection() {
               </p>
             </div>
 
-            {/* registration card */}
+            {/* values card — แทนที่ข้อมูลทะเบียนด้วยหลักการของแบรนด์ */}
             <div className="mt-8 md:mt-10 grid grid-cols-2 gap-4 md:gap-6 border-t border-[var(--wijit-deep)]/10 pt-6">
               <div>
                 <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-foreground/50">
-                  เลขทะเบียนนิติบุคคล
+                  หลักการที่ 01
                 </div>
-                <div className="mt-1 font-mono text-sm md:text-base text-[var(--wijit-deep)] font-semibold">
-                  {COMPANY.registrationNo}
-                </div>
-              </div>
-              <div>
-                <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-foreground/50">
-                  วันที่จดทะเบียน
-                </div>
-                <div className="mt-1 font-mono text-sm md:text-base text-[var(--wijit-deep)] font-semibold">
-                  {COMPANY.registeredOn}
+                <div className="mt-1 text-sm md:text-base text-[var(--wijit-deep)] font-semibold leading-snug">
+                  คัดสรรวัตถุดิบต้นตำรับจากแหล่งปลูกที่ตรวจสอบได้
                 </div>
               </div>
               <div>
                 <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-foreground/50">
-                  ทุนจดทะเบียน
+                  หลักการที่ 02
                 </div>
-                <div className="mt-1 font-mono text-sm md:text-base text-[var(--wijit-deep)] font-semibold">
-                  {COMPANY.capital}
+                <div className="mt-1 text-sm md:text-base text-[var(--wijit-deep)] font-semibold leading-snug">
+                  พัฒนาสูตรร่วมกับแพทย์และเภสัชกร
                 </div>
               </div>
               <div>
                 <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-foreground/50">
-                  หมวดธุรกิจ
+                  หลักการที่ 03
                 </div>
-                <div className="mt-1 text-sm md:text-base text-[var(--wijit-deep)] font-medium leading-snug">
-                  เภสัชภัณฑ์และทางการแพทย์
+                <div className="mt-1 text-sm md:text-base text-[var(--wijit-deep)] font-semibold leading-snug">
+                  ผลิตในโรงงานมาตรฐาน GMP ของไทย
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-foreground/50">
+                  หลักการที่ 04
+                </div>
+                <div className="mt-1 text-sm md:text-base text-[var(--wijit-deep)] font-semibold leading-snug">
+                  รับผิดชอบตลอดการจัดจำหน่ายถึงมือลูกค้า
                 </div>
               </div>
             </div>

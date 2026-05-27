@@ -57,9 +57,6 @@ export default function SiteFooter() {
                   {COMPANY.email}
                 </a>
               </li>
-              <li className="font-mono text-xs text-white/65">
-                ทะเบียนเลขที่ {COMPANY.registrationNo}
-              </li>
             </ul>
           </div>
 

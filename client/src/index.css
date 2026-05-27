@@ -22,8 +22,8 @@
  */
 
 @theme inline {
-  --font-sans: "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Noto Serif Thai", ui-serif, Georgia, serif;
+  --font-sans: "Prompt", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Prompt", ui-serif, Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -140,7 +140,8 @@
   }
   .font-display {
     font-family: var(--font-serif);
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
   .font-mono {
     font-family: var(--font-mono);

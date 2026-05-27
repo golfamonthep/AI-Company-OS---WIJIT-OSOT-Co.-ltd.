@@ -81,12 +81,12 @@ export default function Hero() {
               <div className="flex items-center gap-2 text-foreground/70">
                 <ShieldCheck size={16} className="text-[var(--wijit-dark)]" />
                 <span className="font-mono tracking-wider">
-                  จดทะเบียน {COMPANY.registrationNo}
+                  ร้านขายยาที่ได้รับอนุญาต
                 </span>
               </div>
               <div className="hidden sm:block h-3.5 w-px bg-border" />
               <div className="text-foreground/70 font-mono tracking-wider">
-                EST. 2024 • CHONBURI, THAILAND
+                CHONBURI · THAILAND
               </div>
             </div>
           </div>
