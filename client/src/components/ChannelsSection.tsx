@@ -11,48 +11,48 @@ import {
   Facebook,
   ArrowUpRight,
 } from "lucide-react";
-import { CHANNELS } from "@/const";
-
-const CHANNEL_LIST = [
-  {
-    name: "Shopee",
-    handle: "@wijit.osotthailand",
-    desc: "ช้อปสินค้าของแท้ พร้อมโปรโมชั่นและส่วนลดประจำเดือน",
-    href: CHANNELS.shopee,
-    bg: "#EE4D2D",
-    Icon: ShoppingBag,
-    cta: "เข้าสู่ร้านค้า",
-  },
-  {
-    name: "TikTok",
-    handle: "@cher_antiaging",
-    desc: "รับชมรีวิวจริง วิดีโอแนะนำ และซื้อสินค้าผ่าน TikTok Shop",
-    href: CHANNELS.tiktok,
-    bg: "#000000",
-    Icon: Music2,
-    cta: "ติดตามและสั่งซื้อ",
-  },
-  {
-    name: "LINE Official",
-    handle: "@wijitosot",
-    desc: "พูดคุยกับเภสัชกรของเราโดยตรง สอบถามและสั่งซื้อง่ายผ่าน LINE",
-    href: CHANNELS.line,
-    bg: "#06C755",
-    Icon: MessageCircle,
-    cta: "เพิ่มเพื่อน",
-  },
-  {
-    name: "Facebook",
-    handle: "Wijit.Osot",
-    desc: "ติดตามข่าวสาร โปรโมชั่น และเรื่องราวจากแพทย์ผู้เชี่ยวชาญของเรา",
-    href: CHANNELS.facebook,
-    bg: "#1877F2",
-    Icon: Facebook,
-    cta: "ไปที่เพจ",
-  },
-];
+import { useSiteData } from "@/hooks/useSiteData";
 
 export default function ChannelsSection() {
+  const { channels: CHANNELS } = useSiteData();
+  const CHANNEL_LIST = [
+    {
+      name: "Shopee",
+      handle: "@wijit.osotthailand",
+      desc: "ช้อปสินค้าของแท้ พร้อมโปรโมชั่นและส่วนลดประจำเดือน",
+      href: CHANNELS.shopee,
+      bg: "#EE4D2D",
+      Icon: ShoppingBag,
+      cta: "เข้าสู่ร้านค้า",
+    },
+    {
+      name: "TikTok",
+      handle: "@cher_antiaging",
+      desc: "รับชมรีวิวจริง วิดีโอแนะนำ และซื้อสินค้าผ่าน TikTok Shop",
+      href: CHANNELS.tiktok,
+      bg: "#000000",
+      Icon: Music2,
+      cta: "ติดตามและสั่งซื้อ",
+    },
+    {
+      name: "LINE Official",
+      handle: "@wijitosot",
+      desc: "พูดคุยกับเภสัชกรของเราโดยตรง สอบถามและสั่งซื้อง่ายผ่าน LINE",
+      href: CHANNELS.line,
+      bg: "#06C755",
+      Icon: MessageCircle,
+      cta: "เพิ่มเพื่อน",
+    },
+    {
+      name: "Facebook",
+      handle: "Wijit.Osot",
+      desc: "ติดตามข่าวสาร โปรโมชั่น และเรื่องราวจากแพทย์ผู้เชี่ยวชาญของเรา",
+      href: CHANNELS.facebook,
+      bg: "#1877F2",
+      Icon: Facebook,
+      cta: "ไปที่เพจ",
+    },
+  ];
   return (
     <section
       id="channels"

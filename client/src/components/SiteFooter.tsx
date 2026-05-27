@@ -2,9 +2,11 @@
  * SiteFooter — dark deep-forest footer with brand statement + corporate info
  */
 
-import { LOGO_URL, COMPANY, CHANNELS } from "@/const";
+import { LOGO_URL } from "@/const";
+import { useSiteData } from "@/hooks/useSiteData";
 
 export default function SiteFooter() {
+  const { company: COMPANY, channels: CHANNELS } = useSiteData();
   const year = new Date().getFullYear();
   return (
     <footer className="bg-[var(--wijit-deep)] text-white pt-16 md:pt-20 pb-10">
@@ -113,8 +115,10 @@ export default function SiteFooter() {
           <div className="font-mono text-xs text-white/60">
             © {year} {COMPANY.nameEn}. All rights reserved.
           </div>
-          <div className="font-mono text-xs text-white/60">
-            พัฒนาสูตรโดยแพทย์และเภสัชกร · ผลิตในประเทศไทย
+          <div className="flex flex-wrap gap-x-5 gap-y-1">
+            <span className="font-mono text-xs text-white/60">พัฒนาสูตรโดยแพทย์และเภสัชกร · ผลิตในประเทศไทย</span>
+            <a href="#contact" className="font-mono text-xs text-white/50 hover:text-[var(--wijit)] transition-colors">นโยบายคืนสินค้า</a>
+            <a href="#contact" className="font-mono text-xs text-white/50 hover:text-[var(--wijit)] transition-colors">คำถามที่พบบ่อย</a>
           </div>
         </div>
       </div>

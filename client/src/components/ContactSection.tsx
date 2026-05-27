@@ -2,10 +2,17 @@
  * ContactSection — Editorial contact information block with map link
  */
 
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
-import { COMPANY } from "@/const";
+import { Phone, Mail, MapPin, Clock, ShieldCheck, Truck, Award } from "lucide-react";
+import { useSiteData } from "@/hooks/useSiteData";
+
+const TRUST_BADGES = [
+  { Icon: ShieldCheck, label: "ร้านขายยาที่ได้รับอนุญาต", sub: "ดำเนินการโดยเภสัชกรผู้มีใบอนุญาต" },
+  { Icon: Truck, label: "จัดส่งทั่วประเทศไทย", sub: "ผ่าน Shopee, TikTok Shop และ LINE" },
+  { Icon: Award, label: "รับประกันคุณภาพ 7 วัน", sub: "ยินดีเปลี่ยน/คืนสินค้าหากไม่ได้มาตรฐาน" },
+];
 
 export default function ContactSection() {
+  const { company: COMPANY } = useSiteData();
   return (
     <section id="contact" className="py-20 md:py-28 bg-background">
       <div className="container">
@@ -14,20 +21,20 @@ export default function ContactSection() {
           <span className="h-px w-16 bg-[var(--wijit)]" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12">
-          <div className="lg:col-span-5">
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--wijit-deep)] leading-[1.15]">
-              ติดต่อเรา
-              <br />
-              <span className="text-foreground">เพื่อสอบถามและสั่งซื้อ</span>
-            </h2>
-            <p className="mt-6 text-foreground/75 text-base md:text-lg leading-[1.85]">
-              ทีมงานของเราพร้อมให้คำปรึกษาเรื่องสุขภาพและแนะนำผลิตภัณฑ์ที่เหมาะกับคุณ
-              เปิดดำเนินการทุกวัน ผ่านช่องทางออนไลน์
-            </p>
-          </div>
+        {/* Trust badges */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+          {TRUST_BADGES.map(({ Icon, label, sub }) => (
+            <div key={label} className="flex items-center gap-3 bg-[var(--wijit)]/8 border border-[var(--wijit)]/20 rounded-xl px-4 py-3">
+              <Icon size={18} className="text-[var(--wijit-dark)] flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-[var(--wijit-deep)]">{label}</p>
+                <p className="text-[11px] text-foreground/60 leading-snug">{sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
             <ContactCard
               Icon={Phone}
               label="โทรศัพท์"
@@ -53,7 +60,6 @@ export default function ContactSection() {
               value="เปิดบริการทุกวัน ผ่านช่องทางออนไลน์"
               full
             />
-          </div>
         </div>
       </div>
     </section>

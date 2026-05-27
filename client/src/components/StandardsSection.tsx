@@ -1,15 +1,51 @@
 /**
- * StandardsSection — Trust badges in editorial filing-card style
- * Each card uses pharmacy "Rx tag" aesthetic with mono code + serif label.
+ * StandardsSection — Trust & Standards (UX refresh)
+ * - 6-item icon grid: FDA, GMP, แพทย์พัฒนา, ผลิตในไทย, ส่งทั่วไทย, รับประกัน
+ * - Dark forest background for contrast
+ * - Animated reveal
  */
 
-import { STANDARDS, HERB_LINE_ART } from "@/const";
+import { ShieldCheck, FlaskConical, Stethoscope, MapPin, Truck, RefreshCcw } from "lucide-react";
+import { HERB_LINE_ART } from "@/const";
+
+const TRUST_ITEMS = [
+  {
+    Icon: ShieldCheck,
+    title: "อย. รับรอง",
+    desc: "ผลิตภัณฑ์ทุกรายการผ่านการรับรองจาก สำนักงานคณะกรรมการอาหารและยา",
+  },
+  {
+    Icon: FlaskConical,
+    title: "GMP มาตรฐาน",
+    desc: "กระบวนการผลิตตามมาตรฐาน Good Manufacturing Practice ระดับสากล",
+  },
+  {
+    Icon: Stethoscope,
+    title: "พัฒนาโดยแพทย์",
+    desc: "ทีมแพทย์ผู้เชี่ยวชาญและเภสัชกรร่วมพัฒนาสูตรตำรับทุกผลิตภัณฑ์",
+  },
+  {
+    Icon: MapPin,
+    title: "ผลิตในประเทศไทย",
+    desc: "โรงงานผลิตมาตรฐานตั้งอยู่ในจังหวัดชลบุรี ประเทศไทย",
+  },
+  {
+    Icon: Truck,
+    title: "จัดส่งทั่วไทย",
+    desc: "บริการจัดส่งรวดเร็วทั่วประเทศผ่านช่องทางออนไลน์หลายแพลตฟอร์ม",
+  },
+  {
+    Icon: RefreshCcw,
+    title: "รับประกันคุณภาพ",
+    desc: "ยินดีเปลี่ยนหรือคืนสินค้าหากไม่ได้มาตรฐาน ภายใน 7 วัน",
+  },
+];
 
 export default function StandardsSection() {
   return (
     <section
       id="standards"
-      className="relative py-20 md:py-28 bg-[var(--wijit-deep)] text-white overflow-hidden"
+      className="relative py-16 md:py-28 bg-[var(--wijit-deep)] text-white overflow-hidden grain"
     >
       {/* botanical line art decoration */}
       <img
@@ -20,62 +56,38 @@ export default function StandardsSection() {
       />
 
       <div className="container relative z-10">
-        <div className="flex items-center gap-3 mb-6">
-          <span
-            className="section-num"
-            style={{ color: "var(--wijit)" }}
-          >
-            03 — Quality Standards
+        <div className="flex items-center gap-3 mb-5">
+          <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--wijit)]/80">
+            03 — Standards &amp; Trust
           </span>
-          <span className="h-px w-16 bg-[var(--wijit)]" />
+          <span className="h-px w-16 bg-[var(--wijit)]/50" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-end mb-12 md:mb-16">
-          <div className="lg:col-span-7">
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold leading-[1.15]">
-              เราเชื่อว่าความน่าเชื่อถือ
-              <br />
-              <span className="text-[var(--wijit)]">เริ่มต้นจากมาตรฐาน</span>
-            </h2>
-          </div>
-          <div className="lg:col-span-5">
-            <p className="text-white/75 text-base md:text-lg leading-[1.85]">
-              ทุกผลิตภัณฑ์ของวิจิตรโอสถ
-              ผ่านกระบวนการคัดสรร พัฒนา ทดสอบ และผลิตในโรงงานที่ได้รับการรับรองมาตรฐาน
-              เพื่อให้ผู้ใช้มั่นใจในประสิทธิภาพและความปลอดภัยทุกครั้ง
-            </p>
-          </div>
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-12 md:mb-16">
+          <h2 className="font-display leading-[1.15] max-w-xl">
+            มาตรฐานที่คุณ
+            <br />
+            <span className="text-[var(--wijit)]">วางใจได้</span>
+          </h2>
+          <p className="text-white/65 text-base max-w-sm leading-[1.8]">
+            ทุกขั้นตอนตั้งแต่การวิจัย พัฒนาสูตร ไปจนถึงการผลิตและจัดจำหน่าย
+            ดำเนินการภายใต้มาตรฐานสากลอย่างเคร่งครัด
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {STANDARDS.map((s, i) => (
-            <article
-              key={s.code}
-              className="group relative bg-white/[0.04] backdrop-blur border border-white/10 rounded-md p-6 md:p-7 hover:bg-white/[0.07] hover:border-[var(--wijit)]/50 transition-all duration-300 reveal"
-              style={{ animationDelay: `${80 * i}ms` }}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
+          {TRUST_ITEMS.map(({ Icon, title, desc }, i) => (
+            <div
+              key={title}
+              className="reveal group p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-[var(--wijit)]/40 transition-all duration-400"
+              style={{ animationDelay: `${70 * i}ms` }}
             >
-              {/* corner code chip */}
-              <div className="flex items-center justify-between mb-6">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-[var(--wijit)] uppercase">
-                  No. 0{i + 1}
-                </span>
-                <span className="font-mono text-xs font-semibold text-white/90 px-2 py-1 border border-white/20 rounded">
-                  {s.code}
-                </span>
+              <div className="w-11 h-11 rounded-xl bg-[var(--wijit)]/15 border border-[var(--wijit)]/30 flex items-center justify-center mb-4 group-hover:bg-[var(--wijit)]/25 transition-colors">
+                <Icon size={20} className="text-[var(--wijit)]" />
               </div>
-
-              <h3 className="font-display text-xl md:text-[22px] font-semibold leading-snug">
-                {s.label}
-              </h3>
-              <p className="mt-3 text-sm text-white/70 leading-[1.75]">
-                {s.desc}
-              </p>
-
-              <div
-                aria-hidden
-                className="absolute left-0 right-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--wijit)]/60 to-transparent scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-500"
-              />
-            </article>
+              <h3 className="font-display text-white text-base font-semibold mb-2">{title}</h3>
+              <p className="text-white/60 text-sm leading-[1.75]">{desc}</p>
+            </div>
           ))}
         </div>
       </div>

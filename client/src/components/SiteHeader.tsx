@@ -6,7 +6,8 @@
 
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { LOGO_URL, COMPANY, CHANNELS } from "@/const";
+import { LOGO_URL } from "@/const";
+import { useSiteData } from "@/hooks/useSiteData";
 
 const NAV = [
   { id: "about", label: "เกี่ยวกับเรา" },
@@ -17,6 +18,7 @@ const NAV = [
 ];
 
 export default function SiteHeader() {
+  const { company: COMPANY, channels: CHANNELS } = useSiteData();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

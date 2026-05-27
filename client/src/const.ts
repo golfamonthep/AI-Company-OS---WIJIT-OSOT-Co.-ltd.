@@ -173,3 +173,14 @@ export const STANDARDS = [
     desc: "สูตรพัฒนาร่วมกับแพทย์ผู้เชี่ยวชาญและเภสัชกร เพื่อประสิทธิภาพและความปลอดภัย",
   },
 ];
+
+
+// Manus OAuth helper — used by useAuth() and main.tsx for unauthorized redirects
+export function getLoginUrl(returnPath?: string) {
+  const portalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL as string | undefined;
+  const appId = import.meta.env.VITE_APP_ID as string | undefined;
+  if (!portalUrl || !appId) return "/";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const state = btoa(JSON.stringify({ origin, returnPath: returnPath || "/" }));
+  return `${portalUrl}/oauth/authorize?app_id=${appId}&state=${encodeURIComponent(state)}`;
+}
