@@ -7,7 +7,7 @@ import { routeHandler } from "@/server/api/routeHandler";
 
 const approveSchema = z.object({
   runKey: z.string().min(1),
-  decision: z.enum(["approved", "changes_requested"]).default("approved"),
+  decision: z.enum(["approved", "rejected", "revision_requested", "changes_requested"]).default("approved"),
   approvalNotes: z.string().optional(),
   outputScore: z.number().min(1).max(10).optional(),
   thumbs: z.enum(["up", "down"]).optional(),

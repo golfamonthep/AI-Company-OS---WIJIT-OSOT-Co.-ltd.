@@ -60,6 +60,49 @@ type ContentPack = {
   };
 };
 
+type WorkflowPackage = {
+  campaignAngle: string;
+  executionState: {
+    state: "waiting_for_approval" | "approved" | "executing" | "review_required" | "completed";
+    currentStepId: string;
+    progressPercent: number;
+    nextRequiredAction: string;
+  };
+  ceoStrategy: string;
+  postIdeas: string[];
+  captions: string[];
+  marketingReview: string[];
+  creativeDirection: string[];
+  finalOutputPackage: {
+    hooks: number;
+    captions: number;
+    scripts: number;
+    creativeDirections: number;
+    reviewableItems: number;
+  };
+  nextRequiredApproval: {
+    required: boolean;
+    status: "waiting_approval" | "approved" | "rejected" | "revision_requested";
+    approvalKey: string;
+    label: string;
+    reason: string;
+  };
+  memoryCandidate: {
+    type: "campaign_learning";
+    title: string;
+    summary: string;
+    approvalRequired: boolean;
+    sourceWorkflowRunKey: string;
+  };
+  steps: Array<{
+    id: string;
+    label: string;
+    owner: string;
+    status: "completed" | "waiting_approval" | "queued_after_approval";
+    summary: string;
+  }>;
+};
+
 type StartResult = {
   runKey: string;
   approvalKey: string;
@@ -72,6 +115,7 @@ type StartResult = {
     contentAngle: string;
   };
   contentPack: ContentPack;
+  workflowPackage: WorkflowPackage;
   adsPerformance: {
     ctrPrediction: {
       expectedRange: string;
@@ -124,6 +168,7 @@ type DashboardSnapshot = {
     bestPerformingOutputs?: Array<{ text: string; weightedScore: number }>;
     lowPerformingOutputAlerts?: Array<{ text: string; weightedScore: number; reason: string }>;
     memoryUpdateSummary?: Array<{ title: string; summary?: string; type?: string; tags?: string[] }>;
+    workflowPackage?: WorkflowPackage | null;
   };
   workspace: {
     persistenceMode: string;
@@ -238,9 +283,9 @@ export function ContentDepartmentConsole() {
           }))
         })
       });
-      const payload = (await response.json()) as ApiEnvelope<{ status: "completed" | "rejected" | "revision_requested" }>;
+      const payload = (await response.json()) as ApiEnvelope<{ status: "completed" | "rejected" | "revision_requested"; workflowPackage?: WorkflowPackage }>;
       if (!response.ok || !payload.ok || !payload.data) throw new Error(payload.error ?? "บันทึกผลรีวิวไม่สำเร็จ");
-      setResult({ ...result, status: payload.data.status });
+      setResult({ ...result, status: payload.data.status, workflowPackage: payload.data.workflowPackage ?? result.workflowPackage });
       await refreshSnapshot();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "บันทึกผลรีวิวไม่สำเร็จ");
@@ -291,6 +336,9 @@ export function ContentDepartmentConsole() {
 
         <section className="grid gap-5 lg:grid-cols-[400px_1fr]">
           <div className="space-y-5">
+            <ConsolePanel title="ขั้นตอนงาน Content Department" empty={!result && !snapshot?.contentDepartment.workflowPackage} emptyText="เริ่มงานเพื่อดูแผนงาน ตั้งแต่คำขอธุรกิจจนถึงจุดอนุมัติ">
+              <WorkflowPackageView packageData={result?.workflowPackage ?? snapshot?.contentDepartment.workflowPackage ?? null} />
+            </ConsolePanel>
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <Play size={17} className="text-blue-600" />
@@ -407,6 +455,110 @@ function reviewDecisionNote(decision: WorkflowReviewDecision) {
   if (decision === "rejected") return "คุณไม่อนุมัติชุดคอนเทนต์นี้หลังตรวจคุณภาพ";
   return "คุณขอให้แก้ไขชุดคอนเทนต์ก่อนใช้งาน";
 }
+function WorkflowPackageView({ packageData }: { packageData: WorkflowPackage | null }) {
+  if (!packageData) return null;
+
+  return (
+    <div className="space-y-4">
+      <ExecutionStateSummary packageData={packageData} />
+      <div className="grid gap-3 lg:grid-cols-4">
+        <SummaryStat label="ไอเดียโพสต์" value={packageData.postIdeas.length} />
+        <SummaryStat label="แคปชัน" value={packageData.captions.length} />
+        <SummaryStat label="รายการรอตรวจ" value={packageData.finalOutputPackage.reviewableItems} />
+        <SummaryStat label="อนุมัติถัดไป" value={toApprovalStatusLabel(packageData.nextRequiredApproval.status)} />
+      </div>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+        <span className="font-semibold">{packageData.nextRequiredApproval.label}</span>
+        <p className="mt-1">{packageData.nextRequiredApproval.reason}</p>
+        <p className="mt-1 text-xs text-amber-800">{packageData.nextRequiredApproval.approvalKey}</p>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <InfoBlock title="มุมแคมเปญ" items={[packageData.campaignAngle]} />
+        <InfoBlock title="กลยุทธ์จาก CEO AI" items={[packageData.ceoStrategy]} />
+        <InfoBlock title="ไอเดียโพสต์" items={packageData.postIdeas} />
+        <InfoBlock title="แคปชันหลัก" items={packageData.captions} />
+        <InfoBlock title="Marketing AI ตรวจทิศทาง" items={packageData.marketingReview} />
+        <InfoBlock title="Design AI เสนอแนวทางภาพ" items={packageData.creativeDirection} />
+      </div>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs font-medium text-slate-500">Memory candidate</p>
+        <h3 className="mt-1 text-sm font-semibold text-slate-950">{packageData.memoryCandidate.title}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-700">{packageData.memoryCandidate.summary}</p>
+      </div>
+      <div className="grid gap-2">
+        {packageData.steps.map((step, index) => (
+          <div key={step.id} className="flex gap-3 rounded-md border border-slate-200 bg-white p-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">{index + 1}</span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-950">{step.label}</p>
+                <span className={`rounded-md border px-2 py-0.5 text-xs font-medium ${toWorkflowStepTone(step.status)}`}>{toWorkflowStepStatusLabel(step.status)}</span>
+              </div>
+              <p className="mt-1 break-words text-sm leading-6 text-slate-600">{step.summary}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExecutionStateSummary({ packageData }: { packageData: WorkflowPackage }) {
+  const currentStep = packageData.steps.find((step) => step.id === packageData.executionState.currentStepId);
+  const progress = Math.max(0, Math.min(100, packageData.executionState.progressPercent));
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-blue-700">สถานะงานปัจจุบัน</p>
+          <h3 className="mt-1 text-base font-semibold text-slate-950">{toExecutionStateLabel(packageData.executionState.state)}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-700">ขั้นตอน: {currentStep?.label ?? packageData.executionState.currentStepId}</p>
+        </div>
+        <span className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-sm font-semibold text-blue-700">{progress}%</span>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+        <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="mt-3 rounded-md border border-white bg-white/80 p-3 text-sm leading-6 text-slate-700">
+        <span className="font-medium text-slate-950">สิ่งที่ต้องทำต่อ: </span>
+        {packageData.executionState.nextRequiredAction}
+      </div>
+    </div>
+  );
+}
+
+function toExecutionStateLabel(state: WorkflowPackage["executionState"]["state"]) {
+  const labels: Record<WorkflowPackage["executionState"]["state"], string> = {
+    waiting_for_approval: "รออนุมัติ",
+    approved: "อนุมัติแล้ว",
+    executing: "กำลังดำเนินงาน",
+    review_required: "ต้องรีวิวอีกครั้ง",
+    completed: "เสร็จสมบูรณ์"
+  };
+
+  return labels[state];
+}
+
+function toApprovalStatusLabel(status: WorkflowPackage["nextRequiredApproval"]["status"]) {
+  if (status === "approved") return "อนุมัติแล้ว";
+  if (status === "rejected") return "ไม่อนุมัติ";
+  if (status === "revision_requested") return "ขอแก้ไข";
+  return "รออนุมัติ";
+}
+
+function toWorkflowStepStatusLabel(status: WorkflowPackage["steps"][number]["status"]) {
+  if (status === "completed") return "เสร็จแล้ว";
+  if (status === "queued_after_approval") return "รอหลังอนุมัติ";
+  return "รออนุมัติ";
+}
+
+function toWorkflowStepTone(status: WorkflowPackage["steps"][number]["status"]) {
+  if (status === "completed") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "queued_after_approval") return "border-slate-200 bg-slate-50 text-slate-600";
+  return "border-amber-200 bg-amber-50 text-amber-800";
+}
+
 function ContentPackView({ pack }: { pack: ContentPack }) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">

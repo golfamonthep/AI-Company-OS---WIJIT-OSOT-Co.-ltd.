@@ -36,6 +36,36 @@ describe("live Content Department quality review", () => {
     expect(started.contentPack.scripts).toHaveLength(3);
     expect(started.contentPack.ctaOptions.length).toBeGreaterThanOrEqual(5);
     expect(started.contentPack.qualityScores.length).toBeGreaterThan(started.contentCreator.output.hooks.length);
+    expect(started.workflowPackage).toMatchObject({
+      campaignAngle: expect.any(String),
+      executionState: {
+        state: "waiting_for_approval",
+        currentStepId: "user_approval_checkpoint",
+        progressPercent: expect.any(Number),
+        nextRequiredAction: "ตรวจและอนุมัติชุดคอนเทนต์ก่อนใช้งานจริง"
+      },
+      nextRequiredApproval: {
+        required: true,
+        status: "waiting_approval"
+      },
+      memoryCandidate: {
+        type: "campaign_learning",
+        approvalRequired: true
+      }
+    });
+    expect(started.workflowPackage.steps.map((step) => step.id)).toEqual([
+      "business_request_received",
+      "ceo_strategy",
+      "content_ideas",
+      "marketing_review",
+      "creative_direction",
+      "user_approval_checkpoint",
+      "final_output_package",
+      "memory_candidate"
+    ]);
+    expect(started.workflowPackage.postIdeas.length).toBeGreaterThanOrEqual(5);
+    expect(started.workflowPackage.captions.length).toBeGreaterThanOrEqual(5);
+    expect(started.workflowPackage.creativeDirection.length).toBeGreaterThanOrEqual(3);
 
     const reviews = started.contentCreator.output.hooks.map((hook, index) => {
       const score = index < 8 ? 8 : 5;
@@ -72,11 +102,37 @@ describe("live Content Department quality review", () => {
     const snapshot = await service.getDashboardSnapshot();
 
     expect(approved.status).toBe("completed");
+    expect(approved.workflowPackage.executionState).toMatchObject({
+      state: "completed",
+      currentStepId: "memory_candidate",
+      progressPercent: 100,
+      nextRequiredAction: "พร้อมใช้เป็นข้อมูลอ้างอิงสำหรับรอบถัดไป"
+    });
+    expect(approved.contentPackReview).toMatchObject({
+      status: "approved",
+      score: expect.any(Number)
+    });
+    expect(approved.contentPackReview.approvedPatterns.length).toBeGreaterThan(0);
+    expect(approved.persistence.contentReviewMemory).toBe("mocked");
+    expect(snapshot.contentDepartment.workflowPackage).toMatchObject({
+      campaignAngle: started.workflowPackage.campaignAngle,
+      executionState: {
+        state: "completed",
+        progressPercent: 100
+      },
+      nextRequiredApproval: {
+        required: true
+      },
+      memoryCandidate: {
+        approvalRequired: true
+      }
+    });
     expect(snapshot.contentDepartment.contentPack?.packSummary.totalReviewableItems).toBe(started.contentPack.packSummary.totalReviewableItems);
     expect(snapshot.contentDepartment.qualityReviewSummary?.reviewedOutputCount).toBe(started.contentCreator.output.hooks.length);
     expect(snapshot.contentDepartment.bestPerformingOutputs.length).toBeGreaterThan(0);
     expect(snapshot.contentDepartment.lowPerformingOutputAlerts.length).toBeGreaterThan(0);
     expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.memory_type === "approved_pattern" || memory.memory_type === "successful_hook_pattern")).toBe(true);
+    expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.memory_type === "content_review" && memory.metadata?.type === "content_review")).toBe(true);
     expect(snapshot.contentDepartment.learningEvents.some((event) => event.event_type === "content_creator_quality_evaluated")).toBe(true);
     expect(snapshot.contentDepartment.memoryCurationSummary?.approvedPatternCount).toBeGreaterThan(0);
     expect(snapshot.contentDepartment.memoryCurationSummary?.rejectedPatternCount).toBeGreaterThan(0);
@@ -117,5 +173,40 @@ describe("live Content Department quality review", () => {
     expect(nextRun.contentCreator.output.hooks).toHaveLength(10);
     const guidance = nextRun.contentCreator.input.constraints ?? [];
     expect(guidance.some((item) => item.includes("Approved Hook Generation guidance"))).toBe(true);
+  });
+
+  it("marks revision requests as review required with a clear next action", async () => {
+    const context = createTestContext();
+    const service = new ContentDepartmentLiveMvpService(context);
+    const started = await service.startMotherBabyCampaign({
+      campaignBrief: "Generate TikTok campaign ideas that need human review",
+      productName: "สินค้าแม่และเด็ก",
+      targetAudience: "คุณแม่ไทย",
+      channel: "tiktok",
+      contentGoal: "engagement",
+      tone: "friendly"
+    });
+
+    const reviewed = await service.approveMotherBabyCampaign({
+      runKey: started.runKey,
+      decision: "revision_requested",
+      approvalNotes: "Needs more specific Thai wording.",
+      rejectionReason: "Hooks are too broad for the target buyer.",
+      qualityNotes: "Make captions more specific before use.",
+      workflowSatisfaction: 5,
+      thumbs: "down"
+    });
+    const snapshot = await service.getDashboardSnapshot();
+
+    expect(reviewed.status).toBe("revision_requested");
+    expect(reviewed.workflowPackage.executionState).toMatchObject({
+      state: "review_required",
+      currentStepId: "user_approval_checkpoint",
+      nextRequiredAction: "ปรับเนื้อหาตาม feedback แล้วส่งให้ผู้ใช้ตรวจอีกครั้ง"
+    });
+    expect(snapshot.contentDepartment.workflowPackage?.executionState).toMatchObject({
+      state: "review_required",
+      currentStepId: "user_approval_checkpoint"
+    });
   });
 });

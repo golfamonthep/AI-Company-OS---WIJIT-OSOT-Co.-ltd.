@@ -8,6 +8,7 @@ export class MemoryRepository {
     return this.persistence.create("company_memory", {
       organization_id: memory.organization_id,
       workspace_id: memory.workspace_id,
+      workflow_id: memory.workflow_id,
       title: memory.title,
       memory_type: memory.memory_type ?? "company",
       content: memory.content ?? memory.title,

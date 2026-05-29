@@ -28,7 +28,22 @@ export type LiveContentCampaignInput = {
   constraints?: string[];
 };
 
-export type WorkflowReviewDecision = "approved" | "changes_requested";
+export type WorkflowReviewDecision = "approved" | "rejected" | "revision_requested" | "changes_requested";
+
+export type ContentPackReviewStatus = "draft" | "pending_review" | "approved" | "rejected" | "revision_requested";
+
+export type ContentPackReviewRecord = {
+  contentPackId: string;
+  status: ContentPackReviewStatus;
+  reviewerNote?: string;
+  score?: number;
+  approvedPatterns: string[];
+  rejectedPatterns: string[];
+  improvementSuggestions: string[];
+  reviewedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type WorkflowFeedbackInput = {
   outputScore?: number;
@@ -53,14 +68,70 @@ export type MarketingAudienceAnalysis = {
   contentAngle: string;
 };
 
+export type ContentDepartmentWorkflowStep = {
+  id:
+    | "business_request_received"
+    | "ceo_strategy"
+    | "content_ideas"
+    | "marketing_review"
+    | "creative_direction"
+    | "user_approval_checkpoint"
+    | "final_output_package"
+    | "memory_candidate";
+  label: string;
+  owner: "user" | "ceo" | "content-ai" | "marketing-ai" | "design-ai" | "governance" | "workflow-engine" | "memory";
+  status: "completed" | "waiting_approval" | "queued_after_approval";
+  summary: string;
+};
+
+export type ContentDepartmentExecutionState = {
+  state: "waiting_for_approval" | "approved" | "executing" | "review_required" | "completed";
+  currentStepId: ContentDepartmentWorkflowStep["id"];
+  progressPercent: number;
+  nextRequiredAction: string;
+};
+
+export type ContentDepartmentWorkflowPackage = {
+  campaignAngle: string;
+  executionState: ContentDepartmentExecutionState;
+  ceoStrategy: string;
+  postIdeas: string[];
+  captions: string[];
+  marketingReview: string[];
+  creativeDirection: string[];
+  finalOutputPackage: {
+    hooks: number;
+    captions: number;
+    scripts: number;
+    creativeDirections: number;
+    reviewableItems: number;
+  };
+  nextRequiredApproval: {
+    required: boolean;
+    status: "waiting_approval" | "approved" | "rejected" | "revision_requested";
+    approvalKey: string;
+    label: string;
+    reason: string;
+  };
+  memoryCandidate: {
+    type: "campaign_learning";
+    title: string;
+    summary: string;
+    approvalRequired: boolean;
+    sourceWorkflowRunKey: string;
+  };
+  steps: ContentDepartmentWorkflowStep[];
+};
+
 export type LiveContentWorkflowResult = {
   runKey: string;
   approvalKey: string;
-  status: "waiting_approval" | "completed" | "changes_requested";
+  status: "waiting_approval" | "completed" | "rejected" | "revision_requested";
   campaignName: "Mother-and-baby TikTok Campaign";
   marketing: MarketingAudienceAnalysis;
   adsPerformance: AdsPerformanceReview;
   contentPack: ProductionContentPack;
+  workflowPackage: ContentDepartmentWorkflowPackage;
   contentCreator: ContentCreatorExecutionResult;
   persistence: {
     workflowRun: string;
@@ -129,6 +200,14 @@ export class ContentDepartmentLiveMvpService {
       productName: input.productName,
       contentGoal: input.contentGoal
     });
+    const workflowPackage = buildContentDepartmentWorkflowPackage({
+      input,
+      runKey,
+      approvalKey,
+      marketing,
+      contentPack,
+      adsPerformance
+    });
 
     const workflowRun: WorkflowRunRecord = {
       organization_id: this.context.organizationId,
@@ -144,6 +223,7 @@ export class ContentDepartmentLiveMvpService {
         marketing,
         contentCreator: contentCreator.output,
         contentPack,
+        workflowPackage,
         adsPerformance,
         guardrails: contentCreator.guardrails,
         selectedSkills: contentCreator.selectedSkills,
@@ -170,6 +250,7 @@ export class ContentDepartmentLiveMvpService {
         activeAgent: "governance",
         approvalStatus: "requested",
         approvalKey,
+        workflowPackage,
         contentPackSchemaVersion: contentPack.schemaVersion,
         approvedSkillGuidanceApplied: approvedSkillGuidance,
         realtimeReady: true,
@@ -309,6 +390,7 @@ export class ContentDepartmentLiveMvpService {
       marketing,
       adsPerformance,
       contentPack,
+      workflowPackage,
       contentCreator,
       persistence: {
         workflowRun: workflowSaved.status,
@@ -326,15 +408,26 @@ export class ContentDepartmentLiveMvpService {
       throw new Error(`Workflow run ${input.runKey} was not found.`);
     }
 
-    const decision: WorkflowReviewDecision = input.decision ?? "approved";
+    const decision = normalizeReviewDecision(input.decision ?? "approved");
     const isApproved = decision === "approved";
-    const workflowStatus = isApproved ? "completed" : "changes_requested";
+    const workflowStatus = isApproved ? "completed" : decision;
     const feedback = normalizeFeedback(input);
     const qualityEvaluation = evaluateContentOutputs(input.contentReviews);
     const memoryCuration = curateContentCreatorMemory({ evaluation: qualityEvaluation, runKey: input.runKey });
     const effectiveOutputScore = qualityEvaluation?.overallScore ?? feedback.outputScore;
     const approvalKey = `${input.runKey}-human-approval`;
     const approval = await this.approvals.findByKey(this.context.organizationId, approvalKey);
+    const contentPackReview = buildContentPackReviewRecord({
+      run: run.data,
+      status: decision,
+      feedback,
+      qualityEvaluation,
+      memoryCuration,
+      score: effectiveOutputScore,
+      reviewedAt: new Date().toISOString()
+    });
+    const originalWorkflowPackage = getWorkflowPackage(run.data.output?.workflowPackage) ?? buildFallbackWorkflowPackage(run.data, approvalKey);
+    const updatedWorkflowPackage = withWorkflowExecutionState(originalWorkflowPackage, workflowStatus);
     const completedRun = await this.workflows.saveRun({
       ...run.data,
       status: workflowStatus,
@@ -342,20 +435,24 @@ export class ContentDepartmentLiveMvpService {
         ...(run.data.output ?? {}),
         lifecycle: buildWorkflowLifecycle(workflowStatus),
         activeAgent: "workflow-engine",
+        contentPackReview,
+        workflowPackage: updatedWorkflowPackage,
         approval: {
           status: decision,
           approvedBy: this.context.userId ?? "demo-user",
-          notes: input.approvalNotes ?? (isApproved ? "Approved for MVP content package use." : "Changes requested before approval."),
-          decidedAt: new Date().toISOString(),
+          notes: input.approvalNotes ?? defaultReviewNote(decision),
+          decidedAt: contentPackReview.reviewedAt,
           feedback,
           qualityEvaluation,
-          memoryCuration
+          memoryCuration,
+          contentPackReview
         }
       },
       metrics: {
         ...(run.data.metrics ?? {}),
         approvalRequired: !isApproved,
         approved: isApproved,
+        contentPackReviewStatus: contentPackReview.status,
         outputScore: effectiveOutputScore,
         workflowSatisfaction: feedback.workflowSatisfaction,
         qualityOverallScore: qualityEvaluation?.overallScore,
@@ -368,12 +465,16 @@ export class ContentDepartmentLiveMvpService {
         realtimeReady: true,
         activeAgent: "workflow-engine",
         approvalStatus: decision,
+        contentPackReview,
+        workflowPackage: updatedWorkflowPackage,
         feedback,
         qualityEvaluation,
         memoryCuration,
-        totalElapsedMs: calculateElapsedMs(run.data.created_at, new Date().toISOString()),
-        completedAt: isApproved ? new Date().toISOString() : undefined,
-        changesRequestedAt: isApproved ? undefined : new Date().toISOString()
+        totalElapsedMs: calculateElapsedMs(run.data.created_at, contentPackReview.reviewedAt),
+        completedAt: isApproved ? contentPackReview.reviewedAt : undefined,
+        rejectedAt: decision === "rejected" ? contentPackReview.reviewedAt : undefined,
+        revisionRequestedAt: decision === "revision_requested" ? contentPackReview.reviewedAt : undefined,
+        changesRequestedAt: !isApproved ? contentPackReview.reviewedAt : undefined
       }
     });
 
@@ -384,7 +485,7 @@ export class ContentDepartmentLiveMvpService {
         {
           approverId: this.context.userId ?? "human",
           decision,
-          notes: input.approvalNotes ?? (isApproved ? "Approved." : "Changes requested."),
+          notes: input.approvalNotes ?? defaultReviewNote(decision),
           rejectionReason: feedback.rejectionReason,
           outputScore: effectiveOutputScore,
           thumbs: feedback.thumbs,
@@ -392,21 +493,31 @@ export class ContentDepartmentLiveMvpService {
           qualityNotes: feedback.qualityNotes,
           qualityEvaluation,
           memoryCuration,
-          decidedAt: new Date().toISOString()
+          contentPackReview,
+          decidedAt: contentPackReview.reviewedAt
         }
       ],
       metadata: {
         ...(approval.data?.metadata ?? {}),
+        contentPackReview,
         feedback,
         qualityEvaluation,
         memoryCuration,
-        decidedAt: new Date().toISOString(),
-        approvedAt: isApproved ? new Date().toISOString() : undefined
+        decidedAt: contentPackReview.reviewedAt,
+        approvedAt: isApproved ? contentPackReview.reviewedAt : undefined
       }
     };
     const approvalSaved = await this.approvals.saveApproval(completedApproval);
     const memoryWrites = await this.persistQualityMemory(input.runKey, approvalKey, feedback, qualityEvaluation, memoryCuration, isApproved, input.approvalNotes);
     const proposalSaved = await this.persistSkillImprovementProposal(input.runKey, approvalKey, memoryCuration);
+    const contentReviewMemorySaved = await this.persistContentReviewMemoryEvent({
+      run: run.data,
+      approvalKey,
+      contentPackReview,
+      feedback,
+      qualityEvaluation,
+      decision
+    });
     const memorySaved = isApproved
       ? await this.memory.saveCompanyMemory({
           organization_id: this.context.organizationId,
@@ -418,34 +529,36 @@ export class ContentDepartmentLiveMvpService {
           source_id: input.runKey,
           semantic_tags: ["approved", "content-department", "mother-baby", "tiktok", "feedback"],
           importance: 8,
-          metadata: { approvalKey, approvalNotes: input.approvalNotes, feedback, qualityEvaluation, memoryCuration, memoryWrites, proposalSaved }
+          metadata: { approvalKey, approvalNotes: input.approvalNotes, contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
         })
       : await this.memory.saveTaskHistory({
           organization_id: this.context.organizationId,
           workspace_id: this.context.workspaceId,
           agent_key: "content-creator",
           workflow_id: input.runKey,
-          title: "Mother-and-baby TikTok campaign changes requested",
-          task_intent: "Human reviewer requested changes before approval.",
+          title: decision === "rejected" ? "Mother-and-baby TikTok campaign rejected" : "Mother-and-baby TikTok campaign revision requested",
+          task_intent: decision === "rejected" ? "Human reviewer rejected the generated content pack." : "Human reviewer requested revision before approval.",
           input: { runKey: input.runKey },
-          output: { feedback, qualityEvaluation },
-          result_summary: `${feedback.rejectionReason ?? feedback.qualityNotes ?? "Reviewer requested changes before approval."} ${summarizeQualityEvaluation(qualityEvaluation)}`,
-          semantic_tags: ["changes-requested", "content-department", "mother-baby", "tiktok", "feedback"],
-          metadata: { status: "changes_requested", approvalKey, feedback, qualityEvaluation, memoryCuration, memoryWrites, proposalSaved }
+          output: { contentPackReview, feedback, qualityEvaluation },
+          result_summary: `${feedback.rejectionReason ?? feedback.qualityNotes ?? defaultReviewNote(decision)} ${summarizeQualityEvaluation(qualityEvaluation)}`,
+          semantic_tags: [decision, "content-department", "mother-baby", "tiktok", "feedback"],
+          metadata: { status: decision, approvalKey, contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
         });
     const learningSaved = await this.learning.saveEvent({
       organization_id: this.context.organizationId,
       workspace_id: this.context.workspaceId,
       agent_key: "content-creator",
       workflow_id: input.runKey,
-      event_type: isApproved ? "content_campaign_approved" : "content_campaign_changes_requested",
+      event_type: isApproved ? "content_campaign_approved" : decision === "rejected" ? "content_campaign_rejected" : "content_campaign_revision_requested",
       summary: isApproved
         ? `Human approved the live Content Department MVP campaign output. ${summarizeQualityEvaluation(qualityEvaluation)}`
-        : `Human requested changes on the live Content Department MVP campaign output. ${summarizeQualityEvaluation(qualityEvaluation)}`,
+        : decision === "rejected"
+          ? `Human rejected the live Content Department MVP campaign output. ${summarizeQualityEvaluation(qualityEvaluation)}`
+          : `Human requested revision on the live Content Department MVP campaign output. ${summarizeQualityEvaluation(qualityEvaluation)}`,
       status: decision,
       score: effectiveOutputScore,
-      evidence: [feedback, qualityEvaluation].filter(Boolean),
-      metadata: { approvalKey, workflowName: "Content Production Workflow", feedback, qualityEvaluation, memoryCuration, memoryWrites, proposalSaved }
+      evidence: [contentPackReview, feedback, qualityEvaluation].filter(Boolean),
+      metadata: { approvalKey, workflowName: "Content Production Workflow", contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
     });
     if (qualityEvaluation) {
       await this.learning.saveEvent({
@@ -462,6 +575,7 @@ export class ContentDepartmentLiveMvpService {
           approvalKey,
           workflowName: "Content Production Workflow",
           qualityEvaluation,
+          contentPackReview,
           memoryCuration,
           learningInsights: qualityEvaluation.learningInsights
         }
@@ -472,19 +586,19 @@ export class ContentDepartmentLiveMvpService {
       workspace_id: this.context.workspaceId,
       actor_agent_key: "workflow-engine",
       user_id: this.context.userId,
-      event_type: isApproved ? "live_content_workflow_approved" : "live_content_workflow_changes_requested",
-      action: isApproved ? "approve_mother_baby_tiktok_campaign" : "request_changes_mother_baby_tiktok_campaign",
+      event_type: isApproved ? "live_content_workflow_approved" : decision === "rejected" ? "live_content_workflow_rejected" : "live_content_workflow_revision_requested",
+      action: isApproved ? "approve_mother_baby_tiktok_campaign" : decision === "rejected" ? "reject_mother_baby_tiktok_campaign" : "request_revision_mother_baby_tiktok_campaign",
       severity: "medium",
       summary: isApproved ? "ผู้รีวิวอนุมัติ output ของ Mother-and-baby TikTok Campaign" : "ผู้รีวิวขอแก้ไข output ของ Mother-and-baby TikTok Campaign",
       decision,
       related_workflow_id: input.runKey,
-      metadata: { approvalKey, approvalNotes: input.approvalNotes, feedback, qualityEvaluation, memoryCuration, proposalSaved }
+      metadata: { approvalKey, approvalNotes: input.approvalNotes, contentPackReview, feedback, qualityEvaluation, memoryCuration, proposalSaved }
     });
 
     structuredLogger.info({
       layer: "governance",
-      event: isApproved ? "live_content_workflow_approved" : "live_content_workflow_changes_requested",
-      message: isApproved ? "Human approval completed for Mother-and-baby TikTok Campaign." : "Human requested changes for Mother-and-baby TikTok Campaign.",
+      event: isApproved ? "live_content_workflow_approved" : decision === "rejected" ? "live_content_workflow_rejected" : "live_content_workflow_revision_requested",
+      message: isApproved ? "Human approval completed for Mother-and-baby TikTok Campaign." : decision === "rejected" ? "Human rejected Mother-and-baby TikTok Campaign." : "Human requested revision for Mother-and-baby TikTok Campaign.",
       organizationId: this.context.organizationId,
       workflowId: input.runKey,
       agentId: "workflow-engine",
@@ -497,10 +611,13 @@ export class ContentDepartmentLiveMvpService {
       status: workflowStatus,
       workflowRun: completedRun.data,
       approval: approvalSaved.data,
+      workflowPackage: updatedWorkflowPackage,
+      contentPackReview,
       persistence: {
         workflowRun: completedRun.status,
         approval: approvalSaved.status,
         memory: memorySaved.status,
+        contentReviewMemory: contentReviewMemorySaved.status,
         learning: learningSaved.status,
         audit: auditSaved.status
       }
@@ -527,13 +644,29 @@ export class ContentDepartmentLiveMvpService {
     const latestContentPack = latestOutput.contentPack as ProductionContentPack | undefined;
     const latestMarketing = latestOutput.marketing as MarketingAudienceAnalysis | undefined;
     const latestAdsPerformance = latestOutput.adsPerformance as AdsPerformanceReview | undefined;
+    const latestWorkflowPackage =
+      (latestOutput.workflowPackage as ContentDepartmentWorkflowPackage | undefined) ??
+      (latestContentPack && latestMarketing && latestAdsPerformance && latest
+        ? buildContentDepartmentWorkflowPackage({
+            input: {
+              campaignBrief: latest.objective ?? "Mother-and-baby TikTok Campaign",
+              productName: String(latest.input?.productName ?? ""),
+              targetAudience: String(latest.input?.targetAudience ?? "")
+            },
+            runKey: latest.run_key,
+            approvalKey: String(latestMetadata.approvalKey ?? `${latest.run_key}-human-approval`),
+            marketing: latestMarketing,
+            contentPack: latestContentPack,
+            adsPerformance: latestAdsPerformance
+          })
+        : undefined);
     const latestApproval = approvals.data.find((approval) => approval.metadata?.workflowRunKey === latest?.run_key || approval.approval_key === latestMetadata.approvalKey);
     const latestAuditLogs = auditLogs.data.filter((log) => !latest?.run_key || log.related_workflow_id === latest.run_key).slice(0, 5);
     const latestMemoryUpdates = [...taskHistory.data, ...companyMemory.data, ...agentMemory.data].filter((memory) => !latest?.run_key || memory.workflow_id === latest.run_key || memory.source_id === latest.run_key).slice(0, 8);
     const latestFeedbackEvents = learningEvents.data.filter((event) => !latest?.run_key || event.workflow_id === latest.run_key).filter((event) => event.metadata?.feedback).slice(0, 5);
     const contentApprovals = approvals.data.filter((approval) => approval.subject.includes("Mother-and-baby"));
     const approvedCount = contentApprovals.filter((approval) => approval.status === "approved").length;
-    const rejectedCount = contentApprovals.filter((approval) => approval.status === "changes_requested").length;
+    const rejectedCount = contentApprovals.filter((approval) => approval.status === "changes_requested" || approval.status === "revision_requested" || approval.status === "rejected").length;
     const completedCount = contentRuns.filter((run) => run.status === "completed").length;
     const failedCount = contentRuns.filter((run) => run.status === "failed").length;
     const scoredEvents = learningEvents.data
@@ -594,6 +727,7 @@ export class ContentDepartmentLiveMvpService {
             }
           : null,
         contentPack: latestContentPack ?? null,
+        workflowPackage: latestWorkflowPackage ?? null,
         marketingAnalysis: latestMarketing ?? null,
         adsPerformance: latestAdsPerformance ?? null,
         auditLogSummary: latestAuditLogs.map((log) => ({
@@ -742,6 +876,55 @@ export class ContentDepartmentLiveMvpService {
           ...(change?.thaiToneGuidance ?? []).slice(0, 3).map((note) => `Thai tone guidance: ${note}`)
         ];
       });
+  }
+
+  private async persistContentReviewMemoryEvent(input: {
+    run: WorkflowRunRecord;
+    approvalKey: string;
+    contentPackReview: ContentPackReviewRecord;
+    feedback: ReturnType<typeof normalizeFeedback>;
+    qualityEvaluation: ContentQualityEvaluation | undefined;
+    decision: Exclude<WorkflowReviewDecision, "changes_requested">;
+  }) {
+    const outputSummary = summarizeContentPackOutput(input.run.output);
+    const learnings = [
+      ...input.contentPackReview.approvedPatterns.map((pattern) => `ควรจำ: ${pattern}`),
+      ...input.contentPackReview.rejectedPatterns.map((pattern) => `ควรหลีกเลี่ยง: ${pattern}`),
+      ...input.contentPackReview.improvementSuggestions.map((suggestion) => `ควรปรับปรุง: ${suggestion}`)
+    ].slice(0, 12);
+
+    return this.memory.saveCompanyMemory({
+      organization_id: this.context.organizationId,
+      workspace_id: this.context.workspaceId,
+      workflow_id: input.run.run_key,
+      title: "Content review memory event",
+      content: [
+        `Decision: ${input.contentPackReview.status}`,
+        `Score: ${input.contentPackReview.score ?? "not scored"}/10`,
+        `Reviewer note: ${input.contentPackReview.reviewerNote ?? "none"}`,
+        ...learnings
+      ].join("\n"),
+      memory_type: "content_review",
+      source_type: "human_review",
+      source_id: input.contentPackReview.contentPackId,
+      semantic_tags: ["content-review", "human-review", "content-department", "thai-content", input.contentPackReview.status],
+      importance: input.decision === "approved" ? 8 : 9,
+      metadata: {
+        type: "content_review",
+        source: "human_review",
+        contentPackId: input.contentPackReview.contentPackId,
+        briefSummary: String(input.run.objective ?? "").slice(0, 500),
+        outputSummary,
+        decision: input.contentPackReview.status,
+        reviewerNote: input.contentPackReview.reviewerNote,
+        score: input.contentPackReview.score,
+        learnings,
+        timestamp: input.contentPackReview.reviewedAt,
+        approvalKey: input.approvalKey,
+        feedback: input.feedback,
+        qualityEvaluation: input.qualityEvaluation
+      }
+    });
   }
 
   private async persistQualityMemory(
@@ -907,23 +1090,305 @@ export class ContentDepartmentLiveMvpService {
   }
 }
 
-function buildWorkflowLifecycle(status: "waiting_approval" | "completed" | "changes_requested") {
+function buildWorkflowLifecycle(status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested") {
   const waitingApproval = status === "waiting_approval";
-  const changesRequested = status === "changes_requested";
+  const needsHumanFollowup = status === "changes_requested" || status === "revision_requested" || status === "rejected";
   return [
-    { step: "submit_campaign_brief", agent: "user", status: "completed" },
-    { step: "marketing_audience_analysis", agent: "marketing", status: "completed" },
-    { step: "content_creator_generation", agent: "content-creator", status: "completed" },
-    { step: "ads_performance_campaign_review", agent: "ads-performance", status: "completed" },
-    { step: "governance_approval_checkpoint", agent: "governance", status: "completed" },
-    { step: "human_approval", agent: "human", status: waitingApproval ? "waiting_approval" : changesRequested ? "changes_requested" : "completed" },
-    { step: "persist_outputs", agent: "workflow-engine", status: "completed" },
-    { step: "memory_update", agent: "memory", status: waitingApproval ? "queued_after_approval" : "completed" },
+    { step: "business_request_received", agent: "user", status: "completed" },
+    { step: "ceo_strategy", agent: "ceo", status: "completed" },
+    { step: "content_ideas", agent: "content-creator", status: "completed" },
+    { step: "marketing_review", agent: "marketing", status: "completed" },
+    { step: "creative_direction", agent: "design-ai", status: "completed" },
+    { step: "user_approval_checkpoint", agent: "governance", status: waitingApproval ? "waiting_approval" : needsHumanFollowup ? status : "completed" },
+    { step: "human_approval", agent: "human", status: waitingApproval ? "waiting_approval" : needsHumanFollowup ? status : "completed" },
+    { step: "final_output_package", agent: "workflow-engine", status: "completed" },
+    { step: "memory_candidate", agent: "memory", status: waitingApproval ? "queued_after_approval" : "completed" },
     { step: "learning_event", agent: "learning", status: waitingApproval ? "pending_human_approval" : "completed" },
     { step: "memory_curation", agent: "memory", status: waitingApproval ? "queued_after_approval" : "completed" },
     { step: "skill_improvement_proposal", agent: "learning", status: waitingApproval ? "pending_human_approval" : "requires_human_approval" },
     { step: "dashboard_snapshot", agent: "dashboard", status: "ready" }
   ];
+}
+
+function buildContentDepartmentWorkflowPackage(input: {
+  input: LiveContentCampaignInput;
+  runKey: string;
+  approvalKey: string;
+  marketing: MarketingAudienceAnalysis;
+  contentPack: ProductionContentPack;
+  adsPerformance: AdsPerformanceReview;
+}): ContentDepartmentWorkflowPackage {
+  const productName = input.input.productName?.trim() || "สินค้าแม่และเด็ก";
+  const audience = input.input.targetAudience?.trim() || input.marketing.segment;
+  const campaignAngle = input.contentPack.campaignAngle;
+  const postIdeas = [
+    ...input.contentPack.hooks.slice(0, 5),
+    ...input.contentPack.thumbnailTextIdeas.slice(0, 2)
+  ].slice(0, 6);
+  const captions = input.contentPack.captions.map((caption) => caption.caption).slice(0, 5);
+  const marketingReview = [
+    input.marketing.contentAngle,
+    ...input.marketing.painPoints.slice(0, 2),
+    input.adsPerformance.ctrPrediction.rationale
+  ].filter(Boolean).slice(0, 5);
+  const creativeDirection = [
+    `ใช้ภาพแนวตั้ง 9:16 ให้เห็น ${productName} ในบริบทการใช้งานจริง`,
+    `เปิดคลิปด้วยปัญหาหรือคำถามของ ${audience} ก่อนเสนอคำตอบ`,
+    ...input.contentPack.shootingDirection.slice(0, 4)
+  ].filter(Boolean).slice(0, 6);
+
+  return {
+    campaignAngle,
+    executionState: buildWorkflowExecutionState("waiting_approval"),
+    ceoStrategy: `CEO AI วางทิศทางให้แคมเปญนี้ช่วย ${audience} เข้าใจวิธีเลือก ${productName} ด้วยภาษาที่ไม่ขายแรง และหยุดก่อนเผยแพร่เพื่อให้ผู้ใช้อนุมัติ`,
+    postIdeas,
+    captions,
+    marketingReview,
+    creativeDirection,
+    finalOutputPackage: {
+      hooks: input.contentPack.hooks.length,
+      captions: input.contentPack.captions.length,
+      scripts: input.contentPack.scripts.length,
+      creativeDirections: input.contentPack.shootingDirection.length,
+      reviewableItems: input.contentPack.packSummary.totalReviewableItems
+    },
+    nextRequiredApproval: {
+      required: true,
+      status: "waiting_approval",
+      approvalKey: input.approvalKey,
+      label: "รอผู้ใช้ตรวจและอนุมัติชุดคอนเทนต์",
+      reason: "ระบบยังไม่เผยแพร่หรือใช้งานภายนอกจนกว่าผู้ใช้จะอนุมัติ"
+    },
+    memoryCandidate: {
+      type: "campaign_learning",
+      title: "บทเรียนจาก Content Department Workflow",
+      summary: `รอผลรีวิวจากผู้ใช้เพื่อบันทึกว่าไอเดีย แคปชัน และแนวทางภาพแบบใดเหมาะกับ ${audience}`,
+      approvalRequired: true,
+      sourceWorkflowRunKey: input.runKey
+    },
+    steps: [
+      {
+        id: "business_request_received",
+        label: "รับคำขอธุรกิจ",
+        owner: "user",
+        status: "completed",
+        summary: input.input.campaignBrief
+      },
+      {
+        id: "ceo_strategy",
+        label: "CEO AI วางกลยุทธ์",
+        owner: "ceo",
+        status: "completed",
+        summary: `กำหนดมุมแคมเปญและกรอบความเสี่ยงสำหรับ ${productName}`
+      },
+      {
+        id: "content_ideas",
+        label: "Content AI สร้างไอเดีย",
+        owner: "content-ai",
+        status: "completed",
+        summary: `เตรียม ${input.contentPack.hooks.length} hook, ${input.contentPack.captions.length} caption และ ${input.contentPack.scripts.length} script`
+      },
+      {
+        id: "marketing_review",
+        label: "Marketing AI ตรวจทิศทาง",
+        owner: "marketing-ai",
+        status: "completed",
+        summary: input.marketing.contentAngle
+      },
+      {
+        id: "creative_direction",
+        label: "Design AI เสนอแนวทางภาพ",
+        owner: "design-ai",
+        status: "completed",
+        summary: creativeDirection[0] ?? "เสนอแนวทางภาพสำหรับทีมถ่ายทำ"
+      },
+      {
+        id: "user_approval_checkpoint",
+        label: "จุดอนุมัติจากผู้ใช้",
+        owner: "governance",
+        status: "waiting_approval",
+        summary: "ต้องตรวจคุณภาพและยืนยันก่อนใช้จริง"
+      },
+      {
+        id: "final_output_package",
+        label: "เตรียมแพ็กเกจสุดท้าย",
+        owner: "workflow-engine",
+        status: "completed",
+        summary: `รวม ${input.contentPack.packSummary.totalReviewableItems} รายการให้ตรวจ`
+      },
+      {
+        id: "memory_candidate",
+        label: "สร้าง memory candidate",
+        owner: "memory",
+        status: "queued_after_approval",
+        summary: "บันทึกบทเรียนหลังผู้ใช้ให้ feedback หรืออนุมัติ"
+      }
+    ]
+  };
+}
+
+function withWorkflowExecutionState(
+  workflowPackage: ContentDepartmentWorkflowPackage,
+  status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested" | "running" | "approved"
+): ContentDepartmentWorkflowPackage {
+  const nextApprovalStatus =
+    status === "completed" || status === "approved"
+      ? "approved"
+      : status === "rejected"
+        ? "rejected"
+        : status === "revision_requested" || status === "changes_requested"
+          ? "revision_requested"
+          : "waiting_approval";
+
+  return {
+    ...workflowPackage,
+    executionState: buildWorkflowExecutionState(status),
+    nextRequiredApproval: {
+      ...workflowPackage.nextRequiredApproval,
+      status: nextApprovalStatus
+    },
+    steps: workflowPackage.steps.map((step) => {
+      if (step.id === "user_approval_checkpoint") {
+        return {
+          ...step,
+          status:
+            status === "waiting_approval"
+              ? "waiting_approval"
+              : status === "revision_requested" || status === "changes_requested" || status === "rejected"
+                ? "waiting_approval"
+                : "completed"
+        };
+      }
+      if (step.id === "memory_candidate") {
+        return {
+          ...step,
+          status: status === "completed" || status === "approved" ? "completed" : "queued_after_approval"
+        };
+      }
+      return step;
+    })
+  };
+}
+
+function buildWorkflowExecutionState(
+  status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested" | "running" | "approved"
+): ContentDepartmentExecutionState {
+  if (status === "completed") {
+    return {
+      state: "completed",
+      currentStepId: "memory_candidate",
+      progressPercent: 100,
+      nextRequiredAction: "พร้อมใช้เป็นข้อมูลอ้างอิงสำหรับรอบถัดไป"
+    };
+  }
+
+  if (status === "approved") {
+    return {
+      state: "approved",
+      currentStepId: "final_output_package",
+      progressPercent: 85,
+      nextRequiredAction: "เตรียมแพ็กเกจสุดท้ายและบันทึกบทเรียน"
+    };
+  }
+
+  if (status === "running") {
+    return {
+      state: "executing",
+      currentStepId: "content_ideas",
+      progressPercent: 45,
+      nextRequiredAction: "รอให้ทีม AI เตรียมชุดงานให้ครบก่อนตรวจ"
+    };
+  }
+
+  if (status === "revision_requested" || status === "changes_requested" || status === "rejected") {
+    return {
+      state: "review_required",
+      currentStepId: "user_approval_checkpoint",
+      progressPercent: 70,
+      nextRequiredAction: "ปรับเนื้อหาตาม feedback แล้วส่งให้ผู้ใช้ตรวจอีกครั้ง"
+    };
+  }
+
+  return {
+    state: "waiting_for_approval",
+    currentStepId: "user_approval_checkpoint",
+    progressPercent: 75,
+    nextRequiredAction: "ตรวจและอนุมัติชุดคอนเทนต์ก่อนใช้งานจริง"
+  };
+}
+
+function getWorkflowPackage(value: unknown): ContentDepartmentWorkflowPackage | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const maybePackage = value as Partial<ContentDepartmentWorkflowPackage>;
+  if (!maybePackage.campaignAngle || !Array.isArray(maybePackage.steps)) return undefined;
+  return {
+    ...(maybePackage as ContentDepartmentWorkflowPackage),
+    executionState: maybePackage.executionState ?? buildWorkflowExecutionState("waiting_approval")
+  };
+}
+
+function buildFallbackWorkflowPackage(run: WorkflowRunRecord, approvalKey: string): ContentDepartmentWorkflowPackage {
+  const output = run.output ?? {};
+  const contentPack = output.contentPack as ProductionContentPack | undefined;
+  const marketing = output.marketing as MarketingAudienceAnalysis | undefined;
+  const adsPerformance = output.adsPerformance as AdsPerformanceReview | undefined;
+
+  if (contentPack && marketing && adsPerformance) {
+    return buildContentDepartmentWorkflowPackage({
+      input: {
+        campaignBrief: run.objective ?? "Mother-and-baby TikTok Campaign",
+        productName: String(run.input?.productName ?? ""),
+        targetAudience: String(run.input?.targetAudience ?? "")
+      },
+      runKey: run.run_key,
+      approvalKey,
+      marketing,
+      contentPack,
+      adsPerformance
+    });
+  }
+
+  const executionState = buildWorkflowExecutionState("waiting_approval");
+  return {
+    campaignAngle: run.objective ?? "Mother-and-baby TikTok Campaign",
+    executionState,
+    ceoStrategy: "CEO AI เตรียมแผนงาน Content Department เพื่อให้ผู้ใช้ตรวจและอนุมัติก่อนใช้จริง",
+    postIdeas: [],
+    captions: [],
+    marketingReview: [],
+    creativeDirection: [],
+    finalOutputPackage: {
+      hooks: 0,
+      captions: 0,
+      scripts: 0,
+      creativeDirections: 0,
+      reviewableItems: 0
+    },
+    nextRequiredApproval: {
+      required: true,
+      status: "waiting_approval",
+      approvalKey,
+      label: "รอผู้ใช้ตรวจและอนุมัติ",
+      reason: "ต้องมีการอนุมัติก่อนใช้งานจริง"
+    },
+    memoryCandidate: {
+      type: "campaign_learning",
+      title: "บทเรียนจาก Content Department Workflow",
+      summary: "รอผลรีวิวจากผู้ใช้ก่อนบันทึกเป็นบทเรียน",
+      approvalRequired: true,
+      sourceWorkflowRunKey: run.run_key
+    },
+    steps: [
+      { id: "business_request_received", label: "รับคำขอธุรกิจ", owner: "user", status: "completed", summary: run.objective ?? "รับคำขอแล้ว" },
+      { id: "ceo_strategy", label: "CEO AI วางกลยุทธ์", owner: "ceo", status: "completed", summary: "เตรียมทิศทางงาน" },
+      { id: "content_ideas", label: "Content AI สร้างไอเดีย", owner: "content-ai", status: "completed", summary: "เตรียมเนื้อหา" },
+      { id: "marketing_review", label: "Marketing AI ตรวจทิศทาง", owner: "marketing-ai", status: "completed", summary: "ตรวจทิศทางแคมเปญ" },
+      { id: "creative_direction", label: "Design AI เสนอแนวทางภาพ", owner: "design-ai", status: "completed", summary: "เตรียมแนวทางภาพ" },
+      { id: "user_approval_checkpoint", label: "จุดอนุมัติจากผู้ใช้", owner: "governance", status: "waiting_approval", summary: executionState.nextRequiredAction },
+      { id: "final_output_package", label: "เตรียมแพ็กเกจสุดท้าย", owner: "workflow-engine", status: "completed", summary: "เตรียมผลลัพธ์ให้ตรวจ" },
+      { id: "memory_candidate", label: "สร้าง memory candidate", owner: "memory", status: "queued_after_approval", summary: "รอบันทึกบทเรียนหลังอนุมัติ" }
+    ]
+  };
 }
 
 function normalizeFeedback(input: WorkflowFeedbackInput) {
@@ -934,6 +1399,67 @@ function normalizeFeedback(input: WorkflowFeedbackInput) {
     qualityNotes: input.qualityNotes?.trim() || undefined,
     rejectionReason: input.rejectionReason?.trim() || undefined
   };
+}
+
+function normalizeReviewDecision(decision: WorkflowReviewDecision): Exclude<WorkflowReviewDecision, "changes_requested"> {
+  return decision === "changes_requested" ? "revision_requested" : decision;
+}
+
+function defaultReviewNote(decision: Exclude<WorkflowReviewDecision, "changes_requested">) {
+  if (decision === "approved") return "ผู้รีวิวอนุมัติชุดคอนเทนต์สำหรับใช้งานต่อ";
+  if (decision === "rejected") return "ผู้รีวิวปฏิเสธชุดคอนเทนต์นี้";
+  return "ผู้รีวิวขอให้แก้ไขชุดคอนเทนต์ก่อนใช้งาน";
+}
+
+function buildContentPackReviewRecord(input: {
+  run: WorkflowRunRecord;
+  status: Exclude<WorkflowReviewDecision, "changes_requested">;
+  feedback: ReturnType<typeof normalizeFeedback>;
+  qualityEvaluation: ContentQualityEvaluation | undefined;
+  memoryCuration: MemoryCurationResult | undefined;
+  score?: number;
+  reviewedAt: string;
+}): ContentPackReviewRecord {
+  const contentPackId = String(input.run.metadata?.contentPackId ?? input.run.metadata?.approvalKey ?? `${input.run.run_key}-content-pack`);
+  const approvedPatterns = [
+    ...(input.memoryCuration?.approvedPatterns ?? []).map((pattern) => pattern.content),
+    ...(input.qualityEvaluation?.memoryInsights.highPerformingHooks ?? []),
+    ...(input.qualityEvaluation?.memoryInsights.successfulThaiPhrasing ?? [])
+  ].filter(Boolean).slice(0, 10);
+  const rejectedPatterns = [
+    ...(input.memoryCuration?.rejectedPatterns ?? []).map((pattern) => pattern.content),
+    ...(input.qualityEvaluation?.memoryInsights.rejectedPatterns ?? [])
+  ].filter(Boolean).slice(0, 10);
+  const improvementSuggestions = [
+    input.feedback.rejectionReason,
+    input.feedback.qualityNotes,
+    ...(input.qualityEvaluation?.memoryInsights.optimizationNotes ?? []),
+    ...(input.qualityEvaluation?.learningInsights ?? [])
+  ].filter((item): item is string => Boolean(item?.trim())).slice(0, 10);
+
+  return {
+    contentPackId,
+    status: input.status,
+    reviewerNote: input.feedback.rejectionReason ?? input.feedback.qualityNotes,
+    score: input.score,
+    approvedPatterns,
+    rejectedPatterns,
+    improvementSuggestions,
+    reviewedAt: input.reviewedAt,
+    createdAt: input.run.created_at ?? input.reviewedAt,
+    updatedAt: input.reviewedAt
+  };
+}
+
+function summarizeContentPackOutput(output: Record<string, unknown> | undefined) {
+  const contentPack = output?.contentPack as ProductionContentPack | undefined;
+  if (!contentPack) return "No content pack summary was available.";
+  return [
+    `Campaign angle: ${contentPack.campaignAngle}`,
+    `Reviewable items: ${contentPack.packSummary.totalReviewableItems}`,
+    `Average quality score: ${contentPack.packSummary.averageQualityScore}/10`,
+    `Hooks: ${contentPack.hooks.length}, captions: ${contentPack.captions.length}, scripts: ${contentPack.scripts.length}`
+  ].join(" ");
 }
 
 function clampTenPointScore(value: number | undefined) {

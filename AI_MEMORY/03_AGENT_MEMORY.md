@@ -8,6 +8,8 @@
 - The live operational path is Content Department, especially `src/modules/live-mvp/content-department.ts`.
 - CEO AI currently exists as a deterministic adapter and API route. It is not yet the full command center.
 - `/dashboard` now starts with a CEO AI Command Center surface backed by `src/dashboard/ceo-command-center.ts`; keep using the live Content Department dashboard snapshot and approval queue instead of adding a parallel dashboard data path.
+- Content Department workflow now exposes a CEO-readable `workflowPackage` from `src/modules/live-mvp/content-department.ts`: business request, CEO strategy, content ideas, Marketing review, Design creative direction, visible approval checkpoint, final package summary, and memory candidate. Keep this as the primary visible workflow contract.
+- `workflowPackage.executionState` is the executive workflow status contract. It supports `waiting_for_approval`, `approved`, `executing`, `review_required`, and `completed`, with current step, progress percent, and next required action for the UI.
 - The app is designed to work without Supabase and OpenAI credentials in local demo mode.
 - Thai text may appear as mojibake in some PowerShell output; inspect files in an editor if exact Thai copy matters.
 
