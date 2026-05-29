@@ -10,7 +10,7 @@ export const appNavigation = [
   { href: "/memory", label: th.nav.memory, icon: Database },
   { href: "/sop", label: th.nav.sop, icon: ScrollText },
   { href: "/skills", label: "คลังทักษะ", icon: Zap },
-  { href: "/workflows", label: "Workflow", icon: Workflow },
+  { href: "/workflows", label: "งานที่ CEO AI ดูแล", icon: Workflow },
   { href: "/reports", label: th.nav.reports, icon: FileText },
   { href: "/settings", label: "ตั้งค่า", icon: Settings }
 ];

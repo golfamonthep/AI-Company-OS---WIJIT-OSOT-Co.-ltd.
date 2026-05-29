@@ -11,8 +11,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ChartSpline size={21} />
           </div>
           <div>
-            <p className="text-sm font-bold text-foreground">AI Company OS</p>
-            <p className="text-xs text-muted">ระบบบริษัท AI ภาษาไทย</p>
+            <p className="text-sm font-bold text-foreground">CEO AI</p>
+            <p className="text-xs text-muted">ผู้ช่วยบริหารบริษัทภาษาไทย</p>
           </div>
         </Link>
         <nav className="space-y-1">
@@ -31,8 +31,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 border-b border-border bg-white/90 px-5 py-4 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Thai AI-native company infrastructure</p>
-              <h1 className="text-xl font-bold text-foreground">ศูนย์ปฏิบัติการบริษัท AI</h1>
+              <p className="text-xs font-semibold text-primary">ถาม สรุป และตัดสินใจเรื่องสำคัญ</p>
+              <h1 className="text-xl font-bold text-foreground">CEO AI Command Center</h1>
             </div>
             <Link href="/login" className="rounded-md border border-border px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
               เข้าสู่ระบบ

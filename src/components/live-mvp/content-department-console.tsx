@@ -373,10 +373,10 @@ export function ContentDepartmentConsole() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-blue-700">CEO AI เสนอชุดคอนเทนต์ให้ตรวจ</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">ชุดคอนเทนต์ TikTok สำหรับธุรกิจแม่และเด็ก</h1>
+            <p className="text-sm font-medium text-blue-700">ตรวจงานกับ CEO AI</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">แคมเปญ TikTok สำหรับธุรกิจแม่และเด็ก</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              CEO AI เสนอเนื้อหาให้ตรวจอย่างเป็นขั้นตอน คุณเป็นผู้อนุมัติก่อนใช้จริง และบทเรียนจะถูกบันทึกหลังยืนยันเท่านั้น
+              อ่านสรุปที่ CEO AI เตรียมไว้ ตัดสินใจว่าใช้ได้หรือควรแก้ และยืนยันบทเรียนที่จะเก็บไว้หลังจบงาน
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -387,21 +387,21 @@ export function ContentDepartmentConsole() {
           </div>
         </header>
 
-        <section className="grid gap-5 lg:grid-cols-[400px_1fr]">
+        <section className="grid gap-5 lg:grid-cols-[360px_1fr]">
           <div className="space-y-5">
-            <ConsolePanel title="ขั้นตอนงาน Content Department" empty={!result && !snapshot?.contentDepartment.workflowPackage} emptyText="เริ่มงานเพื่อดูแผนงาน ตั้งแต่คำขอธุรกิจจนถึงจุดอนุมัติ">
+            <ConsolePanel title="ภาพรวมที่ต้องตัดสินใจ" empty={!result && !snapshot?.contentDepartment.workflowPackage} emptyText="ให้ CEO AI เสนอชุดคอนเทนต์ แล้วหน้านี้จะสรุปสิ่งที่ควรตรวจเป็นลำดับสั้น ๆ">
               <WorkflowPackageView packageData={result?.workflowPackage ?? snapshot?.contentDepartment.workflowPackage ?? null} />
             </ConsolePanel>
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <Play size={17} className="text-blue-600" />
-                บรีฟแคมเปญ
+                บอกโจทย์ให้ CEO AI
               </div>
-              <label className="text-xs font-medium text-slate-500">สินค้า</label>
+              <label className="text-xs font-medium text-slate-500">สินค้า / ข้อเสนอ</label>
               <input value={productName} onChange={(event) => setProductName(event.target.value)} className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
               <label className="mt-4 block text-xs font-medium text-slate-500">กลุ่มเป้าหมาย</label>
               <input value={targetAudience} onChange={(event) => setTargetAudience(event.target.value)} className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
-              <label className="mt-4 block text-xs font-medium text-slate-500">บรีฟแคมเปญ</label>
+              <label className="mt-4 block text-xs font-medium text-slate-500">สิ่งที่อยากให้แคมเปญสื่อสาร</label>
               <textarea value={brief} onChange={(event) => setBrief(event.target.value)} rows={7} className="mt-2 w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
               <div className="mt-4 flex flex-wrap gap-2">
                 <button onClick={startWorkflow} disabled={Boolean(loading)} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60">
@@ -420,12 +420,12 @@ export function ContentDepartmentConsole() {
           </div>
 
           <div className="space-y-5">
-              <ConsolePanel title="สรุปแคมเปญ" empty={!result} emptyText="เริ่มงานเพื่อดูมุมแคมเปญและข้อมูลลูกค้าเป้าหมาย">
+            <ConsolePanel title="สรุปที่ CEO AI เสนอ" empty={!result} emptyText="เริ่มงานเพื่อดูมุมแคมเปญ กลุ่มลูกค้า และข้อควรระวังแบบอ่านเร็ว">
               {result ? (
                 <div className="grid gap-4 xl:grid-cols-2">
                   <InfoBlock title="มุมแคมเปญ" items={[result.contentPack.campaignAngle]} />
                   <InfoBlock title="ข้อมูลลูกค้าเป้าหมาย" items={[result.contentPack.targetAudienceInsight]} />
-                  <InfoBlock title="มุมมองจากทีมวิเคราะห์ลูกค้า" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
+                  <InfoBlock title="เหตุผลทางการตลาด" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
                   <InfoBlock title="ข้อควรพิจารณาก่อนลงโฆษณา" items={[result.adsPerformance.ctrPrediction.rationale, ...result.adsPerformance.optimizationSuggestions.slice(0, 2)]} />
                 </div>
               ) : null}
@@ -435,8 +435,8 @@ export function ContentDepartmentConsole() {
               {result ? <ContentPackView pack={result.contentPack} /> : null}
             </ConsolePanel>
 
-            <ConsolePanel title="ตรวจและอนุมัติ" empty={!result} emptyText="รายการตรวจจะถูกสร้างจากทุกชิ้นงานในชุดคอนเทนต์">
-              <div className="space-y-4">
+            <ConsolePanel title="ตรวจรายการสำคัญ" empty={!result} emptyText="CEO AI จะจัดรายการที่ควรตรวจให้หลังสร้างชุดคอนเทนต์">
+              <div className="space-y-3">
                 {reviews.map((review, index) => (
                   <ReviewCard key={`${review.outputType}-${review.outputIndex}`} review={review} index={index} onUpdate={updateReview} onScore={updateReviewScore} />
                 ))}
@@ -446,17 +446,16 @@ export function ContentDepartmentConsole() {
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <ShieldCheck size={17} className="text-amber-600" />
-                บันทึกผลตรวจและบทเรียน
+                ตัดสินใจและบันทึกบทเรียน
               </div>
               {result ? (
                 <>
-                  <p className="text-sm leading-6 text-slate-600">รหัสงานตรวจ: {result.approvalKey}</p>
                   <p className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
                     <AlertTriangle className="mt-0.5 shrink-0" size={16} />
-                    งานนี้ยังไม่ถูกนำไปใช้จริง CEO AI จะบันทึกคะแนน จุดแข็ง และข้อควรเลี่ยงหลังคุณยืนยันเท่านั้น
+                    งานนี้ยังไม่ถูกนำไปใช้จริง CEO AI จะนำไปใช้ต่อหรือบันทึกบทเรียนหลังคุณยืนยันเท่านั้น
                   </p>
-                  <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <TenPointInput label="ความพอใจต่อขั้นตอนงาน" value={workflowSatisfaction} onChange={setWorkflowSatisfaction} />
+                  <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <TenPointInput label="ความมั่นใจในชุดงานนี้" value={workflowSatisfaction} onChange={setWorkflowSatisfaction} />
                     <div>
                       <p className="mb-2 text-xs font-medium text-slate-500">ภาพรวม</p>
                       <div className="flex flex-wrap gap-2">
@@ -469,11 +468,11 @@ export function ContentDepartmentConsole() {
                       </div>
                     </div>
                     <label className="grid gap-2 text-xs font-medium text-slate-500">
-                      หมายเหตุการตรวจ
+                      หมายเหตุถึง CEO AI
                       <textarea value={qualityNotes} onChange={(event) => setQualityNotes(event.target.value)} rows={3} className="resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="สรุปว่าแพ็กนี้ใช้ได้ตรงไหน และควรเลี่ยงอะไรในรอบถัดไป" />
                     </label>
                     <label className="grid gap-2 text-xs font-medium text-slate-500">
-                      เหตุผลที่ปฏิเสธหรือขอให้แก้ไข
+                      ถ้าต้องแก้ ให้บอกเหตุผลสั้น ๆ
                       <input value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="จำเป็นเมื่อกดขอแก้ไข" />
                     </label>
                   </div>
@@ -517,38 +516,26 @@ function reviewDecisionNote(decision: WorkflowReviewDecision) {
 }
 function WorkflowPackageView({ packageData }: { packageData: WorkflowPackage | null }) {
   if (!packageData) return null;
+  const visibleSteps = packageData.steps.slice(0, 4);
 
   return (
     <div className="space-y-4">
       <ExecutionStateSummary packageData={packageData} />
-      <div className="grid gap-3 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2">
         <SummaryStat label="ไอเดียโพสต์" value={packageData.postIdeas.length} />
-        <SummaryStat label="แคปชัน" value={packageData.captions.length} />
         <SummaryStat label="รายการรอตรวจ" value={packageData.finalOutputPackage.reviewableItems} />
         <SummaryStat label="อนุมัติถัดไป" value={toApprovalStatusLabel(packageData.nextRequiredApproval.status)} />
+        <SummaryStat label="ความคืบหน้า" value={`${packageData.executionState.progressPercent}%`} />
       </div>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-        <span className="font-semibold">{packageData.nextRequiredApproval.label}</span>
+        <span className="font-semibold">ต้องรอคุณตัดสินใจก่อนใช้จริง</span>
         <p className="mt-1">{packageData.nextRequiredApproval.reason}</p>
-        <p className="mt-1 text-xs text-amber-800">{packageData.nextRequiredApproval.approvalKey}</p>
-      </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <InfoBlock title="มุมแคมเปญ" items={[packageData.campaignAngle]} />
-        <InfoBlock title="กลยุทธ์จาก CEO AI" items={[packageData.ceoStrategy]} />
-        <InfoBlock title="ไอเดียโพสต์" items={packageData.postIdeas} />
-        <InfoBlock title="แคปชันหลัก" items={packageData.captions} />
-        <InfoBlock title="Marketing AI ตรวจทิศทาง" items={packageData.marketingReview} />
-        <InfoBlock title="Design AI เสนอแนวทางภาพ" items={packageData.creativeDirection} />
-      </div>
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <p className="text-xs font-medium text-slate-500">Memory candidate</p>
-        <h3 className="mt-1 text-sm font-semibold text-slate-950">{packageData.memoryCandidate.title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-700">{packageData.memoryCandidate.summary}</p>
       </div>
       <div className="grid gap-2">
-        {packageData.steps.map((step, index) => (
-          <div key={step.id} className="flex gap-3 rounded-md border border-slate-200 bg-white p-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">{index + 1}</span>
+        <p className="text-xs font-semibold text-slate-500">ลำดับงานแบบย่อ</p>
+        {visibleSteps.map((step, index) => (
+          <div key={step.id} className="flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-100">{index + 1}</span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-semibold text-slate-950">{step.label}</p>
@@ -581,7 +568,7 @@ function ExecutionStateSummary({ packageData }: { packageData: WorkflowPackage }
         <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
       </div>
       <div className="mt-3 rounded-md border border-white bg-white/80 p-3 text-sm leading-6 text-slate-700">
-        <span className="font-medium text-slate-950">สิ่งที่ต้องทำต่อ: </span>
+        <span className="font-medium text-slate-950">ต่อไปให้คุณ: </span>
         {packageData.executionState.nextRequiredAction}
       </div>
     </div>
@@ -628,8 +615,6 @@ function ContentPackView({ pack }: { pack: ContentPack }) {
       <OutputCard title="คำชวนติดต่อ" items={pack.ctaOptions} />
       <OutputCard title="ข้อความหน้าปก" items={pack.thumbnailTextIdeas} />
       <OutputCard title="แนวทางถ่ายทำ" items={pack.shootingDirection} />
-      <OutputCard title="แฮชแท็ก" items={pack.hashtagSuggestions} />
-      <QualityScoreList scores={pack.qualityScores} />
     </div>
   );
 }
@@ -679,9 +664,12 @@ function ConsolePanel({ title, empty, emptyText, children }: { title: string; em
 
 function ReviewCard({ review, index, onUpdate, onScore }: { review: PackReview; index: number; onUpdate: (index: number, update: Partial<PackReview>) => void; onScore: (index: number, criterion: QualityCriterion, value: number) => void }) {
   const score = Math.round(average(Object.values(review.scores)) * 10) / 10;
+  const updateOverallScore = (value: number) => {
+    criteria.forEach((criterion) => onScore(index, criterion.key, value));
+  };
 
   return (
-    <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <article className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-blue-700">
@@ -693,23 +681,18 @@ function ReviewCard({ review, index, onUpdate, onScore }: { review: PackReview; 
           {score}/10
         </span>
       </div>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        {criteria.map((criterion) => (
-          <TenPointInput key={criterion.key} label={`${criterion.label} (${criterion.weight})`} value={review.scores[criterion.key]} onChange={(value) => onScore(index, criterion.key, value)} />
-        ))}
+      <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+        <TenPointInput label="คะแนนรวมที่คุณให้" value={Math.round(score)} onChange={updateOverallScore} />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={() => onUpdate(index, { decision: "approved" })} className={`rounded-md border px-3 py-2 text-sm font-medium ${review.decision === "approved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-700"}`}>
-          อนุมัติรายการนี้
+          ใช้ได้
         </button>
         <button type="button" onClick={() => onUpdate(index, { decision: "rejected" })} className={`rounded-md border px-3 py-2 text-sm font-medium ${review.decision === "rejected" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-700"}`}>
-          ปฏิเสธรายการนี้
+          ควรแก้
         </button>
       </div>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <textarea value={review.feedbackNotes} onChange={(event) => onUpdate(index, { feedbackNotes: event.target.value })} rows={2} className="resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="ทำไมรายการนี้ดีหรือไม่ดี" />
-        <textarea value={review.improvementSuggestion} onChange={(event) => onUpdate(index, { improvementSuggestion: event.target.value })} rows={2} className="resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="ควรปรับอย่างไรในรอบถัดไป" />
-      </div>
+      <textarea value={review.feedbackNotes} onChange={(event) => onUpdate(index, { feedbackNotes: event.target.value })} rows={2} className="mt-3 w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="บอก CEO AI สั้น ๆ ว่าดีตรงไหน หรือควรเลี่ยงอะไร" />
     </article>
   );
 }
@@ -730,21 +713,21 @@ function QualitySummaryCard({ summary, snapshot, pack }: { summary: ReturnType<t
   const apiQuality = snapshot?.contentDepartment.qualityReviewSummary;
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-950">คะแนนคุณภาพ</h2>
+      <h2 className="text-sm font-semibold text-slate-950">ความพร้อมก่อนอนุมัติ</h2>
       <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-        <SummaryStat label="คะแนนตรวจรวม" value={summary.overallScore ? `${summary.overallScore}/10` : "-"} />
-        <SummaryStat label="อนุมัติ" value={summary.approvedCount} />
-        <SummaryStat label="ปฏิเสธ" value={summary.rejectedCount} />
-        <SummaryStat label="ต้องระวัง" value={summary.lowCount} />
+        <SummaryStat label="คะแนนรวม" value={summary.overallScore ? `${summary.overallScore}/10` : "-"} />
+        <SummaryStat label="ใช้ได้" value={summary.approvedCount} />
+        <SummaryStat label="ควรแก้" value={summary.rejectedCount} />
+        <SummaryStat label="ต้องดูใกล้ ๆ" value={summary.lowCount} />
       </div>
       {pack ? (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-          คะแนนประเมินเบื้องต้น: {pack.packSummary.averageQualityScore}/10 จาก {pack.packSummary.totalReviewableItems} รายการ
+          CEO AI ประเมินเบื้องต้น {pack.packSummary.averageQualityScore}/10 จาก {pack.packSummary.totalReviewableItems} รายการ
         </div>
       ) : null}
       {apiQuality ? (
         <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-          คะแนนตรวจล่าสุด {apiQuality.overallScore}/10 ({apiQuality.qualityCategory}) จาก {apiQuality.reviewedOutputCount} รายการ
+          ผลตรวจล่าสุด {apiQuality.overallScore}/10 จาก {apiQuality.reviewedOutputCount} รายการ
         </div>
       ) : null}
       {snapshot?.contentDepartment.memoryCurationSummary ? (
@@ -784,9 +767,9 @@ function MemoryCheckpointEditor({
     <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-blue-700">Memory checkpoint</p>
+          <p className="text-xs font-medium text-blue-700">บทเรียนที่จะจำไว้</p>
           <h3 className="mt-1 text-base font-semibold text-slate-950">{checkpoint.prompt}</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-700">เลือกและแก้ไขรายการที่จะเก็บไว้เป็นความจำของบริษัท</p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">เลือกสิ่งที่ CEO AI ควรจำไว้สำหรับงานรอบถัดไป</p>
         </div>
         <span className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-sm font-semibold text-blue-700">{selectedCount} รายการ</span>
       </div>
@@ -807,7 +790,7 @@ function MemoryCheckpointEditor({
       </div>
       <button onClick={onConfirm} disabled={loading || !selectedCount} className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50">
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-        ยืนยันและบันทึกความจำ
+        ยืนยันและบันทึกบทเรียน
       </button>
     </div>
   );
@@ -873,25 +856,6 @@ function OutputCard({ title, items }: { title: string; items: string[] }) {
           <div key={`${title}-${index}`} className="whitespace-pre-line break-words rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
             <span className="mb-1 block text-xs font-medium text-blue-700">#{index + 1}</span>
             {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function QualityScoreList({ scores }: { scores: ContentPack["qualityScores"] }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <h3 className="text-sm font-semibold text-slate-950">คะแนนคุณภาพจากระบบ</h3>
-      <div className="mt-3 space-y-2">
-        {scores.slice(0, 12).map((score) => (
-          <div key={score.itemId} className="break-words rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-medium text-slate-950">{typeLabels[score.outputType]} #{score.outputIndex + 1}</span>
-              <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">{score.score}/10</span>
-            </div>
-            <p className="mt-1 text-xs text-slate-500">{score.rationale}</p>
           </div>
         ))}
       </div>
