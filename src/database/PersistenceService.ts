@@ -1,7 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BaseRecord, PersistenceListResult, PersistenceResult } from "@/database/types";
 
-const memoryStore = new Map<string, Array<BaseRecord & Record<string, unknown>>>();
+const memoryStoreKey = "__ai_company_os_memory_store__";
+const globalMemoryStore = globalThis as typeof globalThis & {
+  [memoryStoreKey]?: Map<string, Array<BaseRecord & Record<string, unknown>>>;
+};
+const memoryStore = globalMemoryStore[memoryStoreKey] ?? new Map<string, Array<BaseRecord & Record<string, unknown>>>();
+globalMemoryStore[memoryStoreKey] = memoryStore;
 
 export class PersistenceService {
   constructor(private readonly supabase: SupabaseClient | null = null) {}

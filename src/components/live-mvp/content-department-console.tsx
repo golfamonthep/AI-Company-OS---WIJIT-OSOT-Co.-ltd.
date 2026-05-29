@@ -21,6 +21,17 @@ type QualityCriterion =
 
 type ReviewItemType = "hook" | "caption" | "script" | "cta" | "thumbnail" | "shooting_note" | "hashtag";
 type WorkflowReviewDecision = "approved" | "rejected" | "revision_requested";
+type MemoryCheckpointCandidate = {
+  id: string;
+  kind: "approved_campaign_style" | "tone_of_voice" | "preferred_messaging" | "rejected_pattern" | "workflow_preference";
+  title: string;
+  content: string;
+  tags: string[];
+  importance: number;
+  source: "content_review" | "quality_evaluation" | "memory_curation" | "workflow_feedback";
+  editable: boolean;
+  save?: boolean;
+};
 
 type PackReview = {
   outputType: ReviewItemType;
@@ -93,6 +104,14 @@ type WorkflowPackage = {
     summary: string;
     approvalRequired: boolean;
     sourceWorkflowRunKey: string;
+  };
+  memoryCheckpoint?: {
+    prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?";
+    status: "not_ready" | "pending_confirmation" | "saved" | "dismissed";
+    sourceWorkflowRunKey: string;
+    approvalKey: string;
+    candidates: MemoryCheckpointCandidate[];
+    savedCandidateIds?: string[];
   };
   steps: Array<{
     id: string;
@@ -169,6 +188,7 @@ type DashboardSnapshot = {
     lowPerformingOutputAlerts?: Array<{ text: string; weightedScore: number; reason: string }>;
     memoryUpdateSummary?: Array<{ title: string; summary?: string; type?: string; tags?: string[] }>;
     workflowPackage?: WorkflowPackage | null;
+    memoryCheckpoint?: WorkflowPackage["memoryCheckpoint"] | null;
   };
   workspace: {
     persistenceMode: string;
@@ -214,7 +234,8 @@ export function ContentDepartmentConsole() {
   const [result, setResult] = useState<StartResult | null>(null);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [reviews, setReviews] = useState<PackReview[]>([]);
-  const [loading, setLoading] = useState<"start" | "approve" | "reject" | "snapshot" | null>(null);
+  const [memoryCandidates, setMemoryCandidates] = useState<MemoryCheckpointCandidate[]>([]);
+  const [loading, setLoading] = useState<"start" | "approve" | "reject" | "memory" | "snapshot" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [workflowSatisfaction, setWorkflowSatisfaction] = useState(8);
   const [thumbs, setThumbs] = useState<"up" | "down">("up");
@@ -249,6 +270,7 @@ export function ContentDepartmentConsole() {
       if (!response.ok || !payload.ok || !payload.data) throw new Error(payload.error ?? "เริ่มงานไม่สำเร็จ");
       setResult(payload.data);
       setReviews(buildPackReviews(payload.data.contentPack));
+      setMemoryCandidates([]);
       setQualityNotes("");
       setRejectionReason("");
       await refreshSnapshot();
@@ -299,7 +321,12 @@ export function ContentDepartmentConsole() {
     try {
       const response = await fetch("/api/live/content-department/dashboard");
       const payload = (await response.json()) as ApiEnvelope<DashboardSnapshot>;
-      if (response.ok && payload.ok && payload.data) setSnapshot(payload.data);
+      if (response.ok && payload.ok && payload.data) {
+        setSnapshot(payload.data);
+        if (payload.data.contentDepartment.memoryCheckpoint?.status === "pending_confirmation") {
+          setMemoryCandidates(payload.data.contentDepartment.memoryCheckpoint.candidates);
+        }
+      }
     } finally {
       setLoading((current) => (current === "snapshot" ? null : current));
     }
@@ -313,6 +340,32 @@ export function ContentDepartmentConsole() {
     setReviews((items) =>
       items.map((item, itemIndex) => (itemIndex === index ? { ...item, scores: { ...item.scores, [criterion]: value } } : item))
     );
+  }
+
+  function updateMemoryCandidate(index: number, update: Partial<MemoryCheckpointCandidate>) {
+    setMemoryCandidates((items) => items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...update } : item)));
+  }
+
+  async function confirmMemoryCheckpoint() {
+    const runKey = snapshot?.contentDepartment.memoryCheckpoint?.sourceWorkflowRunKey ?? result?.runKey;
+    if (!runKey) return;
+    setLoading("memory");
+    setError(null);
+    try {
+      const response = await fetch("/api/live/content-department/memory-checkpoint", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ runKey, candidates: memoryCandidates })
+      });
+      const payload = (await response.json()) as ApiEnvelope<{ status: "saved" | "dismissed"; savedCount: number; workflowPackage?: WorkflowPackage }>;
+      if (!response.ok || !payload.ok || !payload.data) throw new Error(payload.error ?? "บันทึกความจำไม่สำเร็จ");
+      if (payload.data.workflowPackage && result) setResult({ ...result, workflowPackage: payload.data.workflowPackage });
+      await refreshSnapshot();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "บันทึกความจำไม่สำเร็จ");
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
@@ -427,7 +480,7 @@ export function ContentDepartmentConsole() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button onClick={() => reviewWorkflow("approved")} disabled={!approvalReady || Boolean(loading)} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">
                       {loading === "approve" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                      อนุมัติและบันทึกบทเรียน
+                      อนุมัติงาน
                     </button>
                     <button onClick={() => reviewWorkflow("rejected")} disabled={!approvalReady || Boolean(loading) || !rejectionReason.trim()} className="inline-flex items-center gap-2 rounded-md border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
                       {loading === "reject" ? <Loader2 size={16} className="animate-spin" /> : <ThumbsDown size={16} />}
@@ -438,6 +491,13 @@ export function ContentDepartmentConsole() {
                       ขอให้แก้ไขและบันทึกข้อเสนอแนะ
                     </button>
                   </div>
+                  <MemoryCheckpointEditor
+                    checkpoint={snapshot?.contentDepartment.memoryCheckpoint ?? result.workflowPackage.memoryCheckpoint ?? null}
+                    candidates={memoryCandidates}
+                    loading={loading === "memory"}
+                    onUpdate={updateMemoryCandidate}
+                    onConfirm={confirmMemoryCheckpoint}
+                  />
                   <MemoryUpdateView snapshot={snapshot} />
                 </>
               ) : (
@@ -694,6 +754,74 @@ function QualitySummaryCard({ summary, snapshot, pack }: { summary: ReturnType<t
       ) : null}
     </div>
   );
+}
+
+function MemoryCheckpointEditor({
+  checkpoint,
+  candidates,
+  loading,
+  onUpdate,
+  onConfirm
+}: {
+  checkpoint: WorkflowPackage["memoryCheckpoint"] | null;
+  candidates: MemoryCheckpointCandidate[];
+  loading: boolean;
+  onUpdate: (index: number, update: Partial<MemoryCheckpointCandidate>) => void;
+  onConfirm: () => void;
+}) {
+  if (!checkpoint) return null;
+  if (checkpoint.status === "saved") {
+    return (
+      <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-800">
+        บันทึกความจำของบริษัทเรียบร้อยแล้ว
+      </div>
+    );
+  }
+  if (checkpoint.status !== "pending_confirmation") return null;
+  const selectedCount = candidates.filter((candidate) => candidate.save !== false).length;
+
+  return (
+    <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-blue-700">Memory checkpoint</p>
+          <h3 className="mt-1 text-base font-semibold text-slate-950">{checkpoint.prompt}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-700">เลือกและแก้ไขรายการที่จะเก็บไว้เป็นความจำของบริษัท</p>
+        </div>
+        <span className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-sm font-semibold text-blue-700">{selectedCount} รายการ</span>
+      </div>
+      <div className="mt-3 space-y-3">
+        {candidates.map((candidate, index) => (
+          <article key={candidate.id} className="rounded-md border border-slate-200 bg-white p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
+                <input type="checkbox" checked={candidate.save !== false} onChange={(event) => onUpdate(index, { save: event.target.checked })} className="h-4 w-4 rounded border-slate-300 text-blue-600" />
+                {toMemoryCandidateKindLabel(candidate.kind)}
+              </label>
+              <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">{candidate.importance}/10</span>
+            </div>
+            <input value={candidate.title} onChange={(event) => onUpdate(index, { title: event.target.value })} className="mt-3 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-950 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
+            <textarea value={candidate.content} onChange={(event) => onUpdate(index, { content: event.target.value })} rows={3} className="mt-2 w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-800 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
+          </article>
+        ))}
+      </div>
+      <button onClick={onConfirm} disabled={loading || !selectedCount} className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50">
+        {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+        ยืนยันและบันทึกความจำ
+      </button>
+    </div>
+  );
+}
+
+function toMemoryCandidateKindLabel(kind: MemoryCheckpointCandidate["kind"]) {
+  const labels: Record<MemoryCheckpointCandidate["kind"], string> = {
+    approved_campaign_style: "รูปแบบแคมเปญที่อนุมัติ",
+    tone_of_voice: "น้ำเสียงของแบรนด์",
+    preferred_messaging: "ข้อความที่ควรใช้",
+    rejected_pattern: "รูปแบบที่ไม่ควรใช้",
+    workflow_preference: "ความชอบต่อขั้นตอนงาน"
+  };
+  return labels[kind];
 }
 
 function MemoryUpdateView({ snapshot }: { snapshot: DashboardSnapshot | null }) {

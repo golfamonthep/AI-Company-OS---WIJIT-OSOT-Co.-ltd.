@@ -13,6 +13,9 @@
 - Persistence direction: Supabase-ready, but local in-memory fallback must keep working.
 - AI direction: OpenAI when configured, deterministic fallback when unavailable.
 - Governance direction: approval required before publishing, spending, external writes, financial mutation, or customer contact.
+- CEO command loop direction: primary user commands should enter through CEO AI, produce an approval-gated plan, and keep internal agents/workflows mostly hidden behind CEO-readable summaries.
+- Content workflow direction: Content Department MVP is the first live workflow, centered on Mother-and-baby TikTok campaign generation, review, approval, and optional memory capture.
+- Memory checkpoint direction: workflow memory is not saved automatically after approval. The system presents editable candidates and saves company memory only after explicit user confirmation.
 
 ## Implementation Defaults
 
@@ -20,6 +23,9 @@
 - Prefer adapters and small selectors over new systems.
 - Preserve mock/static fallback until API-backed replacements are verified.
 - Keep internal complexity available for inspection but not dominant in primary UX.
+- For command-loop UX, prefer CEO-facing plan/reply/approval language over exposing raw runtime internals.
+- For approval workflow UX, separate "approve the work" from "save this as company memory"; approval alone must not promote memory.
+- For future DB integration, keep memory checkpoint candidates structured and repository-backed, not markdown-only or UI-only.
 
 ## Explicit Non-Decisions
 
@@ -28,3 +34,4 @@
 - No new departments yet.
 - No automatic skill manual rewrites.
 - No uncontrolled autonomy.
+- No automatic company-memory promotion from workflow completion or approval alone.

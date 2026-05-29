@@ -65,6 +65,29 @@ export type MemoryItem = {
   summary: string;
 };
 
+export type MemoryCheckpointCandidate = {
+  id: string;
+  kind: "approved_campaign_style" | "tone_of_voice" | "preferred_messaging" | "rejected_pattern" | "workflow_preference";
+  title: string;
+  content: string;
+  tags: string[];
+  importance: number;
+  source: "content_review" | "quality_evaluation" | "memory_curation" | "workflow_feedback";
+  editable: boolean;
+  save?: boolean;
+};
+
+export type MemoryCheckpoint = {
+  prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?";
+  status: "not_ready" | "pending_confirmation" | "saved" | "dismissed";
+  sourceWorkflowRunKey: string;
+  approvalKey: string;
+  candidates: MemoryCheckpointCandidate[];
+  savedCandidateIds?: string[];
+  confirmedBy?: string;
+  confirmedAt?: string;
+};
+
 export type TimelineEvent = {
   id: string;
   agent: string;
@@ -175,6 +198,7 @@ export type LiveDashboardSnapshot = {
       type?: string;
       tags?: string[];
     }>;
+    memoryCheckpoint?: MemoryCheckpoint | null;
     feedbackSummary?: Array<{
       eventType?: string;
       status?: string;

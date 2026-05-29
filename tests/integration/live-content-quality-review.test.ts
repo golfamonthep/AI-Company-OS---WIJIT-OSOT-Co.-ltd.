@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PersistenceService } from "@/database/PersistenceService";
 import { LearningRepository } from "@/database/repositories/LearningRepository";
+import { MemoryRepository } from "@/database/repositories/MemoryRepository";
 import { ContentDepartmentLiveMvpService } from "@/modules/live-mvp/content-department";
 import type { ApiContext } from "@/server/api/auth";
 
@@ -19,6 +20,84 @@ function createTestContext(): ApiContext {
 }
 
 describe("live Content Department quality review", () => {
+  it("keeps workflow memory editable until the user confirms the memory checkpoint", async () => {
+    const context = createTestContext();
+    const service = new ContentDepartmentLiveMvpService(context);
+    const memory = new MemoryRepository(context.persistence);
+    const started = await service.startMotherBabyCampaign({
+      campaignBrief: "Generate approval-gated TikTok hooks for a Thai mother-and-baby product",
+      productName: "ผลิตภัณฑ์แม่และเด็ก",
+      targetAudience: "คุณแม่ไทย",
+      channel: "tiktok",
+      contentGoal: "engagement",
+      tone: "friendly"
+    });
+
+    const pendingTaskHistory = await memory.listTaskHistory(context.organizationId);
+    const pendingCompanyMemory = await memory.listCompanyMemory(context.organizationId);
+    const pendingAgentMemory = await memory.listAgentMemory(context.organizationId);
+    const pendingSnapshot = await service.getDashboardSnapshot();
+
+    expect(started.persistence.memory).toBe("queued_after_approval");
+    expect(pendingTaskHistory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(pendingCompanyMemory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(pendingAgentMemory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(pendingSnapshot.contentDepartment.memoryUpdateSummary).toEqual([]);
+    expect(pendingSnapshot.contentDepartment.workflowPackage?.steps.find((step) => step.id === "memory_candidate")?.status).toBe("queued_after_approval");
+
+    const approved = await service.approveMotherBabyCampaign({
+      runKey: started.runKey,
+      decision: "approved",
+      approvalNotes: "Approved for learning memory.",
+      outputScore: 8,
+      workflowSatisfaction: 8,
+      thumbs: "up",
+      qualityNotes: "Use these patterns in the next round."
+    });
+    const approvedTaskHistory = await memory.listTaskHistory(context.organizationId);
+    const approvedCompanyMemory = await memory.listCompanyMemory(context.organizationId);
+    const approvedAgentMemory = await memory.listAgentMemory(context.organizationId);
+    const approvedSnapshot = await service.getDashboardSnapshot();
+
+    expect(approved.persistence.memory).toBe("pending_user_confirmation");
+    expect(approved.workflowPackage.steps.find((step) => step.id === "memory_candidate")?.status).toBe("queued_after_approval");
+    expect(approvedTaskHistory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(approvedCompanyMemory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(approvedAgentMemory.data.some((item) => item.workflow_id === started.runKey || item.source_id === started.runKey)).toBe(false);
+    expect(approvedSnapshot.contentDepartment.memoryUpdateSummary).toEqual([]);
+    expect(approvedSnapshot.contentDepartment.memoryCheckpoint).toMatchObject({
+      prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?",
+      status: "pending_confirmation",
+      sourceWorkflowRunKey: started.runKey
+    });
+    expect(approvedSnapshot.contentDepartment.memoryCheckpoint?.candidates.length).toBeGreaterThan(0);
+    expect(approvedSnapshot.contentDepartment.memoryCheckpoint?.candidates.every((candidate) => candidate.editable)).toBe(true);
+    expect(approvedSnapshot.contentDepartment.memoryCheckpoint?.candidates.some((candidate) => candidate.kind === "approved_campaign_style")).toBe(true);
+    expect(approvedSnapshot.contentDepartment.memoryCheckpoint?.candidates.some((candidate) => candidate.kind === "rejected_pattern")).toBe(true);
+
+    const firstCandidate = approvedSnapshot.contentDepartment.memoryCheckpoint!.candidates[0];
+    const confirmed = await service.confirmMemoryCheckpoint({
+      runKey: started.runKey,
+      confirmedBy: "reviewer-a",
+      candidates: [
+        {
+          ...firstCandidate,
+          title: "Edited company memory candidate",
+          content: "Use this edited campaign style in the next mother-and-baby TikTok workflow.",
+          save: true
+        },
+        ...approvedSnapshot.contentDepartment.memoryCheckpoint!.candidates.slice(1).map((candidate) => ({ ...candidate, save: false }))
+      ]
+    });
+    const confirmedSnapshot = await service.getDashboardSnapshot();
+
+    expect(confirmed.status).toBe("saved");
+    expect(confirmed.savedCount).toBe(1);
+    expect(confirmed.workflowPackage.steps.find((step) => step.id === "memory_candidate")?.status).toBe("completed");
+    expect(confirmedSnapshot.contentDepartment.memoryCheckpoint?.status).toBe("saved");
+    expect(confirmedSnapshot.contentDepartment.memoryUpdateSummary.some((item) => item.title === "Edited company memory candidate")).toBe(true);
+  });
+
   it("persists detailed hook reviews into workflow, learning, dashboard, and memory", async () => {
     const context = createTestContext();
     const service = new ContentDepartmentLiveMvpService(context);
@@ -99,6 +178,12 @@ describe("live Content Department quality review", () => {
       qualityNotes: "Strong Thai hooks promoted to memory.",
       contentReviews: reviews
     });
+    const approvedSnapshot = await service.getDashboardSnapshot();
+    await service.confirmMemoryCheckpoint({
+      runKey: started.runKey,
+      confirmedBy: "reviewer-a",
+      candidates: approvedSnapshot.contentDepartment.memoryCheckpoint!.candidates
+    });
     const snapshot = await service.getDashboardSnapshot();
 
     expect(approved.status).toBe("completed");
@@ -113,7 +198,7 @@ describe("live Content Department quality review", () => {
       score: expect.any(Number)
     });
     expect(approved.contentPackReview.approvedPatterns.length).toBeGreaterThan(0);
-    expect(approved.persistence.contentReviewMemory).toBe("mocked");
+    expect(approved.persistence.contentReviewMemory).toBe("pending_user_confirmation");
     expect(snapshot.contentDepartment.workflowPackage).toMatchObject({
       campaignAngle: started.workflowPackage.campaignAngle,
       executionState: {
@@ -131,8 +216,9 @@ describe("live Content Department quality review", () => {
     expect(snapshot.contentDepartment.qualityReviewSummary?.reviewedOutputCount).toBe(started.contentCreator.output.hooks.length);
     expect(snapshot.contentDepartment.bestPerformingOutputs.length).toBeGreaterThan(0);
     expect(snapshot.contentDepartment.lowPerformingOutputAlerts.length).toBeGreaterThan(0);
-    expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.memory_type === "approved_pattern" || memory.memory_type === "successful_hook_pattern")).toBe(true);
-    expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.memory_type === "content_review" && memory.metadata?.type === "content_review")).toBe(true);
+    expect(snapshot.contentDepartment.memoryCheckpoint?.status).toBe("saved");
+    expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.memory_type === "approved_campaign_style" || memory.memory_type === "tone_of_voice")).toBe(true);
+    expect(snapshot.contentDepartment.memoryUpdates.some((memory) => memory.metadata?.source === "memory_curation" || memory.metadata?.source === "content_review")).toBe(true);
     expect(snapshot.contentDepartment.learningEvents.some((event) => event.event_type === "content_creator_quality_evaluated")).toBe(true);
     expect(snapshot.contentDepartment.memoryCurationSummary?.approvedPatternCount).toBeGreaterThan(0);
     expect(snapshot.contentDepartment.memoryCurationSummary?.rejectedPatternCount).toBeGreaterThan(0);

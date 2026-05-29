@@ -60,6 +60,37 @@ export type WorkflowReviewInput = WorkflowFeedbackInput & {
   approvalNotes?: string;
 };
 
+export type MemoryCheckpointCandidateKind = "approved_campaign_style" | "tone_of_voice" | "preferred_messaging" | "rejected_pattern" | "workflow_preference";
+
+export type MemoryCheckpointCandidate = {
+  id: string;
+  kind: MemoryCheckpointCandidateKind;
+  title: string;
+  content: string;
+  tags: string[];
+  importance: number;
+  source: "content_review" | "quality_evaluation" | "memory_curation" | "workflow_feedback";
+  editable: boolean;
+  save?: boolean;
+};
+
+export type MemoryCheckpoint = {
+  prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?";
+  status: "not_ready" | "pending_confirmation" | "saved" | "dismissed";
+  sourceWorkflowRunKey: string;
+  approvalKey: string;
+  candidates: MemoryCheckpointCandidate[];
+  savedCandidateIds?: string[];
+  confirmedBy?: string;
+  confirmedAt?: string;
+};
+
+export type ConfirmMemoryCheckpointInput = {
+  runKey: string;
+  confirmedBy?: string;
+  candidates: MemoryCheckpointCandidate[];
+};
+
 export type MarketingAudienceAnalysis = {
   segment: string;
   painPoints: string[];
@@ -120,6 +151,7 @@ export type ContentDepartmentWorkflowPackage = {
     approvalRequired: boolean;
     sourceWorkflowRunKey: string;
   };
+  memoryCheckpoint?: MemoryCheckpoint;
   steps: ContentDepartmentWorkflowStep[];
 };
 
@@ -308,33 +340,7 @@ export class ContentDepartmentLiveMvpService {
         budgetEfficiency: adsPerformance.budgetEfficiency
       }
     });
-    const memorySaved = await this.memory.saveTaskHistory({
-      organization_id: this.context.organizationId,
-      workspace_id: this.context.workspaceId,
-      agent_key: "content-creator",
-      workflow_id: runKey,
-      title: "Mother-and-baby TikTok campaign draft generated",
-      task_intent: input.campaignBrief,
-      input: { ...input },
-      output: workflowRun.output,
-      result_summary: `Generated ${contentCreator.output.hooks.length} hooks, ${contentCreator.output.scripts.length} scripts, and ${contentCreator.output.captions.length} captions. Waiting for human approval.`,
-      semantic_tags: ["content-department", "mother-baby", "tiktok", "workflow-run"],
-      metadata: { status: "waiting_approval" }
-    });
-    await this.memory.saveAgentMemory({
-      organization_id: this.context.organizationId,
-      workspace_id: this.context.workspaceId,
-      agent_key: "ads-performance",
-      workflow_id: runKey,
-      title: "Mother-and-baby TikTok campaign performance review",
-      content: adsPerformance.reportingSummary,
-      memory_type: "campaign_performance_insight",
-      source_type: "workflow",
-      source_id: runKey,
-      semantic_tags: ["ads-performance", "ctr", "optimization", "mother-baby", "tiktok"],
-      importance: 7,
-      metadata: { adsPerformance }
-    });
+    const memoryCheckpointStatus = "queued_after_approval";
     const learningSaved = await this.learning.saveEvent({
       organization_id: this.context.organizationId,
       workspace_id: this.context.workspaceId,
@@ -395,7 +401,7 @@ export class ContentDepartmentLiveMvpService {
       persistence: {
         workflowRun: workflowSaved.status,
         approval: approvalSaved.status,
-        memory: memorySaved.status,
+        memory: memoryCheckpointStatus,
         learning: learningSaved.status,
         audit: auditSaved.status
       }
@@ -427,16 +433,28 @@ export class ContentDepartmentLiveMvpService {
       reviewedAt: new Date().toISOString()
     });
     const originalWorkflowPackage = getWorkflowPackage(run.data.output?.workflowPackage) ?? buildFallbackWorkflowPackage(run.data, approvalKey);
-    const updatedWorkflowPackage = withWorkflowExecutionState(originalWorkflowPackage, workflowStatus);
+    const memoryCheckpoint = isApproved
+      ? buildMemoryCheckpoint({
+          runKey: input.runKey,
+          approvalKey,
+          contentPackReview,
+          feedback,
+          qualityEvaluation,
+          memoryCuration
+        })
+      : undefined;
+    const packageWithCheckpoint = memoryCheckpoint ? { ...originalWorkflowPackage, memoryCheckpoint } : originalWorkflowPackage;
+    const updatedWorkflowPackage = withWorkflowExecutionState(packageWithCheckpoint, workflowStatus, { memoryConfirmed: false });
     const completedRun = await this.workflows.saveRun({
       ...run.data,
       status: workflowStatus,
       output: {
         ...(run.data.output ?? {}),
-        lifecycle: buildWorkflowLifecycle(workflowStatus),
+        lifecycle: buildWorkflowLifecycle(workflowStatus, { memoryConfirmed: false }),
         activeAgent: "workflow-engine",
         contentPackReview,
         workflowPackage: updatedWorkflowPackage,
+        memoryCheckpoint,
         approval: {
           status: decision,
           approvedBy: this.context.userId ?? "demo-user",
@@ -470,6 +488,7 @@ export class ContentDepartmentLiveMvpService {
         feedback,
         qualityEvaluation,
         memoryCuration,
+        memoryCheckpoint,
         totalElapsedMs: calculateElapsedMs(run.data.created_at, contentPackReview.reviewedAt),
         completedAt: isApproved ? contentPackReview.reviewedAt : undefined,
         rejectedAt: decision === "rejected" ? contentPackReview.reviewedAt : undefined,
@@ -508,42 +527,8 @@ export class ContentDepartmentLiveMvpService {
       }
     };
     const approvalSaved = await this.approvals.saveApproval(completedApproval);
-    const memoryWrites = await this.persistQualityMemory(input.runKey, approvalKey, feedback, qualityEvaluation, memoryCuration, isApproved, input.approvalNotes);
     const proposalSaved = await this.persistSkillImprovementProposal(input.runKey, approvalKey, memoryCuration);
-    const contentReviewMemorySaved = await this.persistContentReviewMemoryEvent({
-      run: run.data,
-      approvalKey,
-      contentPackReview,
-      feedback,
-      qualityEvaluation,
-      decision
-    });
-    const memorySaved = isApproved
-      ? await this.memory.saveCompanyMemory({
-          organization_id: this.context.organizationId,
-          workspace_id: this.context.workspaceId,
-          title: "Approved Mother-and-baby TikTok campaign package",
-          content: `Human approved the live Content Department MVP workflow output. Score: ${effectiveOutputScore ?? "not scored"}/10. ${summarizeQualityEvaluation(qualityEvaluation)} Notes: ${feedback.qualityNotes ?? "none"}.`,
-          memory_type: "campaign_learning",
-          source_type: "workflow",
-          source_id: input.runKey,
-          semantic_tags: ["approved", "content-department", "mother-baby", "tiktok", "feedback"],
-          importance: 8,
-          metadata: { approvalKey, approvalNotes: input.approvalNotes, contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
-        })
-      : await this.memory.saveTaskHistory({
-          organization_id: this.context.organizationId,
-          workspace_id: this.context.workspaceId,
-          agent_key: "content-creator",
-          workflow_id: input.runKey,
-          title: decision === "rejected" ? "Mother-and-baby TikTok campaign rejected" : "Mother-and-baby TikTok campaign revision requested",
-          task_intent: decision === "rejected" ? "Human reviewer rejected the generated content pack." : "Human reviewer requested revision before approval.",
-          input: { runKey: input.runKey },
-          output: { contentPackReview, feedback, qualityEvaluation },
-          result_summary: `${feedback.rejectionReason ?? feedback.qualityNotes ?? defaultReviewNote(decision)} ${summarizeQualityEvaluation(qualityEvaluation)}`,
-          semantic_tags: [decision, "content-department", "mother-baby", "tiktok", "feedback"],
-          metadata: { status: decision, approvalKey, contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
-        });
+    const memoryStatus = isApproved ? "pending_user_confirmation" : "not_saved_revision_required";
     const learningSaved = await this.learning.saveEvent({
       organization_id: this.context.organizationId,
       workspace_id: this.context.workspaceId,
@@ -558,7 +543,7 @@ export class ContentDepartmentLiveMvpService {
       status: decision,
       score: effectiveOutputScore,
       evidence: [contentPackReview, feedback, qualityEvaluation].filter(Boolean),
-      metadata: { approvalKey, workflowName: "Content Production Workflow", contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryWrites, contentReviewMemorySaved, proposalSaved }
+      metadata: { approvalKey, workflowName: "Content Production Workflow", contentPackReview, feedback, qualityEvaluation, memoryCuration, memoryCheckpoint, proposalSaved }
     });
     if (qualityEvaluation) {
       await this.learning.saveEvent({
@@ -616,11 +601,107 @@ export class ContentDepartmentLiveMvpService {
       persistence: {
         workflowRun: completedRun.status,
         approval: approvalSaved.status,
-        memory: memorySaved.status,
-        contentReviewMemory: contentReviewMemorySaved.status,
+        memory: memoryStatus,
+        contentReviewMemory: memoryStatus,
         learning: learningSaved.status,
         audit: auditSaved.status
       }
+    };
+  }
+
+  async confirmMemoryCheckpoint(input: ConfirmMemoryCheckpointInput) {
+    const run = await this.workflows.findRunByKey(this.context.organizationId, input.runKey);
+    if (!run.data) {
+      throw new Error(`Workflow run ${input.runKey} was not found.`);
+    }
+
+    const approvalKey = String(run.data.metadata?.approvalKey ?? `${input.runKey}-human-approval`);
+    const existingCheckpoint = getMemoryCheckpoint(run.data.output?.memoryCheckpoint ?? run.data.metadata?.memoryCheckpoint);
+    const candidates = input.candidates.filter((candidate) => candidate.save !== false);
+    const confirmedAt = new Date().toISOString();
+    const saved = [];
+
+    for (const candidate of [...candidates].reverse()) {
+      saved.push(
+        await this.memory.saveCompanyMemory({
+          organization_id: this.context.organizationId,
+          workspace_id: this.context.workspaceId,
+          workflow_id: input.runKey,
+          title: candidate.title,
+          content: candidate.content,
+          memory_type: candidate.kind,
+          source_type: "memory_checkpoint",
+          source_id: input.runKey,
+          semantic_tags: candidate.tags,
+          importance: candidate.importance,
+          metadata: {
+            approvalKey,
+            memoryCheckpointCandidateId: candidate.id,
+            candidateKind: candidate.kind,
+            source: candidate.source,
+            editedBeforeSave: true,
+            confirmedBy: input.confirmedBy ?? this.context.userId ?? "human",
+            confirmedAt,
+            originalCandidate: existingCheckpoint?.candidates.find((item) => item.id === candidate.id)
+          }
+        })
+      );
+    }
+
+    const savedCandidateIds = candidates.map((candidate) => candidate.id);
+    const memoryCheckpoint: MemoryCheckpoint = {
+      ...(existingCheckpoint ?? {
+        prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?",
+        status: "pending_confirmation",
+        sourceWorkflowRunKey: input.runKey,
+        approvalKey,
+        candidates: input.candidates
+      }),
+      status: saved.length ? "saved" : "dismissed",
+      candidates: input.candidates,
+      savedCandidateIds,
+      confirmedBy: input.confirmedBy ?? this.context.userId ?? "human",
+      confirmedAt
+    };
+    const originalWorkflowPackage = getWorkflowPackage(run.data.output?.workflowPackage) ?? buildFallbackWorkflowPackage(run.data, approvalKey);
+    const updatedWorkflowPackage = withWorkflowExecutionState({ ...originalWorkflowPackage, memoryCheckpoint }, "completed", { memoryConfirmed: saved.length > 0 });
+    const updatedRun = await this.workflows.saveRun({
+      ...run.data,
+      output: {
+        ...(run.data.output ?? {}),
+        lifecycle: buildWorkflowLifecycle("completed", { memoryConfirmed: saved.length > 0 }),
+        workflowPackage: updatedWorkflowPackage,
+        memoryCheckpoint
+      },
+      metadata: {
+        ...(run.data.metadata ?? {}),
+        workflowPackage: updatedWorkflowPackage,
+        memoryCheckpoint
+      }
+    });
+
+    await this.audit.save({
+      organization_id: this.context.organizationId,
+      workspace_id: this.context.workspaceId,
+      actor_agent_key: "memory",
+      user_id: this.context.userId,
+      event_type: saved.length ? "memory_checkpoint_confirmed" : "memory_checkpoint_dismissed",
+      action: saved.length ? "save_company_memory_candidates" : "dismiss_company_memory_candidates",
+      severity: "medium",
+      summary: saved.length ? `Human confirmed ${saved.length} company memory candidate(s).` : "Human dismissed company memory candidates.",
+      decision: saved.length ? "approved" : "rejected",
+      related_workflow_id: input.runKey,
+      metadata: { approvalKey, memoryCheckpoint, savedCount: saved.length }
+    });
+
+    return {
+      runKey: input.runKey,
+      status: memoryCheckpoint.status,
+      savedCount: saved.length,
+      saved: saved.map((write) => ({ status: write.status, source: write.source, id: write.data?.id })),
+      workflowRun: updatedRun.data,
+      workflowPackage: updatedWorkflowPackage,
+      memoryCheckpoint
     };
   }
 
@@ -644,6 +725,7 @@ export class ContentDepartmentLiveMvpService {
     const latestContentPack = latestOutput.contentPack as ProductionContentPack | undefined;
     const latestMarketing = latestOutput.marketing as MarketingAudienceAnalysis | undefined;
     const latestAdsPerformance = latestOutput.adsPerformance as AdsPerformanceReview | undefined;
+    const latestMemoryCheckpoint = getMemoryCheckpoint(latestOutput.memoryCheckpoint ?? latestMetadata.memoryCheckpoint);
     const latestWorkflowPackage =
       (latestOutput.workflowPackage as ContentDepartmentWorkflowPackage | undefined) ??
       (latestContentPack && latestMarketing && latestAdsPerformance && latest
@@ -728,6 +810,7 @@ export class ContentDepartmentLiveMvpService {
           : null,
         contentPack: latestContentPack ?? null,
         workflowPackage: latestWorkflowPackage ?? null,
+        memoryCheckpoint: latestMemoryCheckpoint ?? latestWorkflowPackage?.memoryCheckpoint ?? null,
         marketingAnalysis: latestMarketing ?? null,
         adsPerformance: latestAdsPerformance ?? null,
         auditLogSummary: latestAuditLogs.map((log) => ({
@@ -1090,9 +1173,10 @@ export class ContentDepartmentLiveMvpService {
   }
 }
 
-function buildWorkflowLifecycle(status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested") {
+function buildWorkflowLifecycle(status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested", options: { memoryConfirmed?: boolean } = {}) {
   const waitingApproval = status === "waiting_approval";
   const needsHumanFollowup = status === "changes_requested" || status === "revision_requested" || status === "rejected";
+  const memoryCompleted = status === "completed" && options.memoryConfirmed;
   return [
     { step: "business_request_received", agent: "user", status: "completed" },
     { step: "ceo_strategy", agent: "ceo", status: "completed" },
@@ -1102,9 +1186,9 @@ function buildWorkflowLifecycle(status: "waiting_approval" | "completed" | "reje
     { step: "user_approval_checkpoint", agent: "governance", status: waitingApproval ? "waiting_approval" : needsHumanFollowup ? status : "completed" },
     { step: "human_approval", agent: "human", status: waitingApproval ? "waiting_approval" : needsHumanFollowup ? status : "completed" },
     { step: "final_output_package", agent: "workflow-engine", status: "completed" },
-    { step: "memory_candidate", agent: "memory", status: waitingApproval ? "queued_after_approval" : "completed" },
+    { step: "memory_candidate", agent: "memory", status: memoryCompleted ? "completed" : "queued_after_approval" },
     { step: "learning_event", agent: "learning", status: waitingApproval ? "pending_human_approval" : "completed" },
-    { step: "memory_curation", agent: "memory", status: waitingApproval ? "queued_after_approval" : "completed" },
+    { step: "memory_curation", agent: "memory", status: memoryCompleted ? "completed" : "queued_after_approval" },
     { step: "skill_improvement_proposal", agent: "learning", status: waitingApproval ? "pending_human_approval" : "requires_human_approval" },
     { step: "dashboard_snapshot", agent: "dashboard", status: "ready" }
   ];
@@ -1229,7 +1313,8 @@ function buildContentDepartmentWorkflowPackage(input: {
 
 function withWorkflowExecutionState(
   workflowPackage: ContentDepartmentWorkflowPackage,
-  status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested" | "running" | "approved"
+  status: "waiting_approval" | "completed" | "rejected" | "revision_requested" | "changes_requested" | "running" | "approved",
+  options: { memoryConfirmed?: boolean } = {}
 ): ContentDepartmentWorkflowPackage {
   const nextApprovalStatus =
     status === "completed" || status === "approved"
@@ -1262,7 +1347,7 @@ function withWorkflowExecutionState(
       if (step.id === "memory_candidate") {
         return {
           ...step,
-          status: status === "completed" || status === "approved" ? "completed" : "queued_after_approval"
+          status: options.memoryConfirmed ? "completed" : "queued_after_approval"
         };
       }
       return step;
@@ -1325,6 +1410,129 @@ function getWorkflowPackage(value: unknown): ContentDepartmentWorkflowPackage | 
     ...(maybePackage as ContentDepartmentWorkflowPackage),
     executionState: maybePackage.executionState ?? buildWorkflowExecutionState("waiting_approval")
   };
+}
+
+function getMemoryCheckpoint(value: unknown): MemoryCheckpoint | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const checkpoint = value as Partial<MemoryCheckpoint>;
+  if (!checkpoint.sourceWorkflowRunKey || !Array.isArray(checkpoint.candidates)) return undefined;
+  return {
+    prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?",
+    status: checkpoint.status ?? "pending_confirmation",
+    sourceWorkflowRunKey: checkpoint.sourceWorkflowRunKey,
+    approvalKey: checkpoint.approvalKey ?? `${checkpoint.sourceWorkflowRunKey}-human-approval`,
+    candidates: checkpoint.candidates,
+    savedCandidateIds: checkpoint.savedCandidateIds,
+    confirmedBy: checkpoint.confirmedBy,
+    confirmedAt: checkpoint.confirmedAt
+  };
+}
+
+function buildMemoryCheckpoint(input: {
+  runKey: string;
+  approvalKey: string;
+  contentPackReview: ContentPackReviewRecord;
+  feedback: ReturnType<typeof normalizeFeedback>;
+  qualityEvaluation: ContentQualityEvaluation | undefined;
+  memoryCuration: MemoryCurationResult | undefined;
+}): MemoryCheckpoint {
+  const approvedStyle = input.contentPackReview.approvedPatterns[0] ?? input.feedback.qualityNotes ?? "Use approved campaign structure and content style from this reviewed workflow.";
+  const rejectedPattern = input.contentPackReview.rejectedPatterns[0] ?? input.feedback.rejectionReason ?? "Avoid generic, claim-heavy, or unsupported messaging patterns in future campaigns.";
+  const preferredMessaging = input.contentPackReview.improvementSuggestions[0] ?? input.qualityEvaluation?.learningInsights[0] ?? "Keep messaging specific, natural, and useful for Thai mother-and-baby buyers.";
+  const toneOfVoice = input.qualityEvaluation?.memoryInsights.successfulThaiPhrasing[0] ?? "Use warm, Thai-first, parent-friendly language that does not overclaim.";
+  const workflowPreference = input.feedback.workflowSatisfaction
+    ? `Reviewer workflow satisfaction was ${input.feedback.workflowSatisfaction}/10. Keep approval, scoring, and editable memory review in the workflow.`
+    : "Keep approval, scoring, and editable memory review in the workflow before saving company memory.";
+
+  const candidates: MemoryCheckpointCandidate[] = [
+    {
+      id: `${input.runKey}-approved-style`,
+      kind: "approved_campaign_style",
+      title: "Approved campaign style",
+      content: approvedStyle,
+      tags: ["content-department", "campaign-style", "mother-baby", "tiktok"],
+      importance: 8,
+      source: "content_review",
+      editable: true,
+      save: true
+    },
+    {
+      id: `${input.runKey}-tone-of-voice`,
+      kind: "tone_of_voice",
+      title: "Tone of voice",
+      content: toneOfVoice,
+      tags: ["tone-of-voice", "thai-first", "mother-baby"],
+      importance: 8,
+      source: "quality_evaluation",
+      editable: true,
+      save: true
+    },
+    {
+      id: `${input.runKey}-preferred-messaging`,
+      kind: "preferred_messaging",
+      title: "Preferred messaging",
+      content: preferredMessaging,
+      tags: ["messaging", "content-quality", "thai-business"],
+      importance: 7,
+      source: "workflow_feedback",
+      editable: true,
+      save: true
+    },
+    {
+      id: `${input.runKey}-rejected-pattern`,
+      kind: "rejected_pattern",
+      title: "Rejected patterns",
+      content: rejectedPattern,
+      tags: ["rejected-pattern", "guardrail", "content-quality"],
+      importance: 8,
+      source: "content_review",
+      editable: true,
+      save: true
+    },
+    {
+      id: `${input.runKey}-workflow-preference`,
+      kind: "workflow_preference",
+      title: "Workflow preference",
+      content: workflowPreference,
+      tags: ["workflow-preference", "approval", "memory-checkpoint"],
+      importance: 7,
+      source: "workflow_feedback",
+      editable: true,
+      save: true
+    },
+    ...(input.memoryCuration?.rankedMemories ?? [])
+      .filter((memory) => !memory.archiveCandidate)
+      .slice(0, 5)
+      .map((memory, index): MemoryCheckpointCandidate => ({
+        id: `${input.runKey}-curated-${index}`,
+        kind: memory.kind === "rejected_pattern" ? "rejected_pattern" : "approved_campaign_style",
+        title: memory.title,
+        content: memory.content,
+        tags: memory.tags,
+        importance: Math.max(5, Math.min(10, Math.round(memory.usefulnessScore / 10))),
+        source: "memory_curation",
+        editable: true,
+        save: true
+      }))
+  ];
+
+  return {
+    prompt: "บันทึกสิ่งนี้เป็นความจำของบริษัทหรือไม่?",
+    status: "pending_confirmation",
+    sourceWorkflowRunKey: input.runKey,
+    approvalKey: input.approvalKey,
+    candidates: dedupeMemoryCheckpointCandidates(candidates)
+  };
+}
+
+function dedupeMemoryCheckpointCandidates(candidates: MemoryCheckpointCandidate[]) {
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.kind}:${candidate.title}:${candidate.content}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return Boolean(candidate.content.trim());
+  });
 }
 
 function buildFallbackWorkflowPackage(run: WorkflowRunRecord, approvalKey: string): ContentDepartmentWorkflowPackage {
