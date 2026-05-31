@@ -16,6 +16,7 @@
 - CEO command loop direction: primary user commands should enter through CEO AI, produce an approval-gated plan, and keep internal agents/workflows mostly hidden behind CEO-readable summaries.
 - Content workflow direction: Content Department MVP is the first live workflow, centered on Mother-and-baby TikTok campaign generation, review, approval, and optional memory capture.
 - Memory checkpoint direction: workflow memory is not saved automatically after approval. The system presents editable candidates and saves company memory only after explicit user confirmation.
+- Dashboard UX direction: `/dashboard` now uses a premium dark CEO AI Command Center shell with sidebar, top header, prominent command composer, agent command room, approval queue, outputs, memory, and system status. Preserve the CEO AI-first, approval-first mental model when editing this surface.
 
 ## Implementation Defaults
 

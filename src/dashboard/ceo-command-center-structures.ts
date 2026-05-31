@@ -74,21 +74,21 @@ export const defaultCeoPlans: CeoPlanStructure[] = [
 export const defaultDelegatedTasks: DelegatedTaskStructure[] = [
   {
     key: "marketing-angle",
-    name: "ทีมวิเคราะห์ลูกค้า",
+    name: "Marketing AI",
     role: "ช่วยวิเคราะห์ลูกค้าและมุมสื่อสาร",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     currentWork: "เตรียมมุมแคมเปญสำหรับคุณแม่มือใหม่ที่ต้องการข้อมูลชัดเจนและน่าเชื่อถือ"
   },
   {
     key: "content-pack",
-    name: "ทีมคอนเทนต์",
+    name: "Content Creator AI",
     role: "ช่วยร่างคอนเทนต์ให้ CEO AI ตรวจทาน",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     currentWork: "เตรียมฮุก แคปชัน และสคริปต์ที่รอคุณตรวจยืนยันก่อนใช้จริง"
   },
   {
     key: "ads-readiness",
-    name: "ทีมประเมินโฆษณา",
+    name: "Ads Performance AI",
     role: "ช่วยประเมินความพร้อมก่อนลงโฆษณา",
     status: "พร้อมดำเนินการเมื่อได้รับอนุมัติ",
     currentWork: "เตรียมข้อควรระวังด้านงบ กลุ่มเป้าหมาย และความคาดหวังผลลัพธ์"
@@ -122,21 +122,21 @@ export const defaultMemoryItems: MemoryItemStructure[] = [
     title: "น้ำเสียงสำหรับกลุ่มแม่และเด็ก",
     detail: "ใช้ภาษาง่าย อบอุ่น ไม่กดดัน และให้เหตุผลที่ตรวจสอบได้ก่อนชวนซื้อ",
     type: "brand",
-    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
+    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
   },
   {
     key: "approval-before-publishing",
     title: "กฎก่อนนำงานไปใช้จริง",
     detail: "ข้อความแคมเปญ คำแนะนำเรื่องงบ และการติดต่อลูกค้าต้องรอคุณอนุมัติก่อน",
     type: "การอนุมัติ",
-    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
+    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
   },
   {
     key: "winning-content-angle",
     title: "มุมคอนเทนต์ที่ควรทดลอง",
     detail: "แนวทางแบบเช็กลิสต์และคำแนะนำที่ช่วยลดความกังวล เหมาะกับกลุ่มคุณแม่มือใหม่",
     type: "แคมเปญ",
-    confirmationNote: "บันทึกเป็นบทเรียนหลังคุณยืนยัน"
+    confirmationNote: "บันทึกเป็นความจำหลังผู้ใช้ยืนยัน"
   }
 ];
 

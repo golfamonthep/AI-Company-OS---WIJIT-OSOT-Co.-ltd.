@@ -124,13 +124,13 @@ export function createCeoCommandCenterViewModel(
     : [defaultDailyBriefItems[2].text];
 
   const headline = approvalRequired
-    ? "CEO AI รอให้คุณตัดสินใจ"
+    ? "CEO AI กำลังรอการตัดสินใจจากคุณ"
     : activeRuns > 0
       ? "CEO AI กำลังประสานงานให้คุณ"
-      : "เริ่มจากการคุยกับ CEO AI";
+      : "CEO AI พร้อมช่วยคุณเริ่มงาน";
 
   const primaryAction = approvalRequired
-    ? { label: "ตรวจงานก่อนอนุมัติ", href: "#approval-queue" }
+    ? { label: "ตรวจงานที่รออนุมัติ", href: "#approval-queue" }
     : { label: "ให้ CEO AI เสนอแผนแคมเปญ", href: "/workflows/content-production" };
 
   const systemBadges = [
@@ -175,16 +175,16 @@ export function createCeoCommandCenterViewModel(
     secondaryAction: { label: "ดูงานแคมเปญ", href: "/workflows/content-department" },
     systemBadges,
     guardrail: mainAlert
-      ? `ยังไม่ถูกนำไปใช้จริง: ${businessAlert}`
+      ? `ยังไม่เผยแพร่ภายนอก และยังไม่ถูกนำไปใช้จริง: ${businessAlert}`
       : fallbackMode
-        ? "ยังไม่ใช้กับลูกค้าจริง และงานสำคัญต้องรอคุณอนุมัติก่อน"
+        ? "ยังไม่เผยแพร่ภายนอก และงานสำคัญต้องรอคุณอนุมัติก่อน"
         : "คำแนะนำ การใช้งบ และการติดต่อลูกค้าต้องรอคุณอนุมัติเสมอ",
     teamStatus:
       activeRuns > 0
-        ? `ทีมคอนเทนต์กำลังทำงาน ${activeRuns} งาน`
+        ? `Content Department กำลังทำงาน ${activeRuns} งาน`
         : approvalRequired
-          ? "ทีมคอนเทนต์ส่งงานให้ CEO AI รอคุณตรวจ"
-          : "ทีมคอนเทนต์พร้อมเริ่มงานถัดไป",
+          ? "Content Department ส่งงานให้ CEO AI รอคุณตรวจ"
+          : "Content Department พร้อมเริ่มงานถัดไป",
     nextSteps,
     commandPrompts: [
       "วันนี้ฉันควรตัดสินใจเรื่องอะไรก่อน",

@@ -241,6 +241,7 @@ export function ContentDepartmentConsole() {
   const [thumbs, setThumbs] = useState<"up" | "down">("up");
   const [qualityNotes, setQualityNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showAllReviewItems, setShowAllReviewItems] = useState(false);
 
   const approvalReady = result?.status === "waiting_approval";
   const reviewSummary = useMemo(() => summarizeReviews(reviews), [reviews]);
@@ -382,7 +383,7 @@ export function ContentDepartmentConsole() {
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium ${status.tone}`}>{status.label}</span>
             <a href="/dashboard" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-              กลับแดชบอร์ด
+              กลับไปคุยกับ CEO AI
             </a>
           </div>
         </header>
@@ -395,7 +396,7 @@ export function ContentDepartmentConsole() {
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <Play size={17} className="text-blue-600" />
-                บอกโจทย์ให้ CEO AI
+                บอกโจทย์ให้ชัด
               </div>
               <label className="text-xs font-medium text-slate-500">สินค้า / ข้อเสนอ</label>
               <input value={productName} onChange={(event) => setProductName(event.target.value)} className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" />
@@ -406,11 +407,11 @@ export function ContentDepartmentConsole() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button onClick={startWorkflow} disabled={Boolean(loading)} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60">
                   {loading === "start" ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                  ให้ CEO AI เสนอชุดคอนเทนต์
+                  ให้ CEO AI เตรียมงาน
                 </button>
                 <button onClick={refreshSnapshot} disabled={Boolean(loading)} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 disabled:opacity-60">
                   <RefreshCw size={16} />
-                  รีเฟรช
+                  อัปเดตสถานะ
                 </button>
               </div>
               {error ? <p className="mt-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
@@ -425,7 +426,7 @@ export function ContentDepartmentConsole() {
                 <div className="grid gap-4 xl:grid-cols-2">
                   <InfoBlock title="มุมแคมเปญ" items={[result.contentPack.campaignAngle]} />
                   <InfoBlock title="ข้อมูลลูกค้าเป้าหมาย" items={[result.contentPack.targetAudienceInsight]} />
-                  <InfoBlock title="เหตุผลทางการตลาด" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
+                  <InfoBlock title="เหตุผลที่ CEO AI เลือกมุมนี้" items={[result.marketing.contentAngle, ...result.marketing.painPoints.slice(0, 2)]} />
                   <InfoBlock title="ข้อควรพิจารณาก่อนลงโฆษณา" items={[result.adsPerformance.ctrPrediction.rationale, ...result.adsPerformance.optimizationSuggestions.slice(0, 2)]} />
                 </div>
               ) : null}
@@ -437,9 +438,14 @@ export function ContentDepartmentConsole() {
 
             <ConsolePanel title="ตรวจรายการสำคัญ" empty={!result} emptyText="CEO AI จะจัดรายการที่ควรตรวจให้หลังสร้างชุดคอนเทนต์">
               <div className="space-y-3">
-                {reviews.map((review, index) => (
+                {(showAllReviewItems ? reviews : reviews.slice(0, 6)).map((review, index) => (
                   <ReviewCard key={`${review.outputType}-${review.outputIndex}`} review={review} index={index} onUpdate={updateReview} onScore={updateReviewScore} />
                 ))}
+                {reviews.length > 6 ? (
+                  <button type="button" onClick={() => setShowAllReviewItems((current) => !current)} className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50">
+                    {showAllReviewItems ? "แสดงเฉพาะรายการสำคัญ" : `ดูรายการตรวจทั้งหมด ${reviews.length} รายการ`}
+                  </button>
+                ) : null}
               </div>
             </ConsolePanel>
 
@@ -460,10 +466,10 @@ export function ContentDepartmentConsole() {
                       <p className="mb-2 text-xs font-medium text-slate-500">ภาพรวม</p>
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => setThumbs("up")} className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${thumbs === "up" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-700"}`}>
-                          <ThumbsUp size={15} /> คุณภาพดี
+                          <ThumbsUp size={15} /> พร้อมใช้
                         </button>
                         <button onClick={() => setThumbs("down")} className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${thumbs === "down" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-700"}`}>
-                          <ThumbsDown size={15} /> ต้องปรับ
+                          <ThumbsDown size={15} /> ขอปรับก่อน
                         </button>
                       </div>
                     </div>
@@ -473,21 +479,21 @@ export function ContentDepartmentConsole() {
                     </label>
                     <label className="grid gap-2 text-xs font-medium text-slate-500">
                       ถ้าต้องแก้ ให้บอกเหตุผลสั้น ๆ
-                      <input value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="จำเป็นเมื่อกดขอแก้ไข" />
+                      <input value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100" placeholder="เช่น ภาษาแข็งเกินไป หรือยังไม่ตรงกลุ่มลูกค้า" />
                     </label>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button onClick={() => reviewWorkflow("approved")} disabled={!approvalReady || Boolean(loading)} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">
                       {loading === "approve" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                      อนุมัติงาน
+                      อนุมัติให้ CEO AI ไปต่อ
                     </button>
                     <button onClick={() => reviewWorkflow("rejected")} disabled={!approvalReady || Boolean(loading) || !rejectionReason.trim()} className="inline-flex items-center gap-2 rounded-md border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
                       {loading === "reject" ? <Loader2 size={16} className="animate-spin" /> : <ThumbsDown size={16} />}
-                      ปฏิเสธและบันทึกสิ่งที่ควรหลีกเลี่ยง
+                      ไม่ใช้ชุดนี้
                     </button>
                     <button onClick={() => reviewWorkflow("revision_requested")} disabled={!approvalReady || Boolean(loading) || !rejectionReason.trim()} className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 disabled:opacity-50">
                       {loading === "reject" ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                      ขอให้แก้ไขและบันทึกข้อเสนอแนะ
+                      ขอให้ CEO AI แก้ไข
                     </button>
                   </div>
                   <MemoryCheckpointEditor
@@ -608,13 +614,21 @@ function toWorkflowStepTone(status: WorkflowPackage["steps"][number]["status"]) 
 
 function ContentPackView({ pack }: { pack: ContentPack }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      <OutputCard title="ฮุกเปิดคลิป" items={pack.hooks} />
-      <OutputCard title="แคปชัน" items={pack.captions.map((caption) => `${caption.caption}\n${caption.hashtags.join(" ")}`)} />
-      <OutputCard title="สคริปต์" items={pack.scripts.map((script) => `${script.title}\n${script.scenes.join("\n")}`)} />
-      <OutputCard title="คำชวนติดต่อ" items={pack.ctaOptions} />
-      <OutputCard title="ข้อความหน้าปก" items={pack.thumbnailTextIdeas} />
-      <OutputCard title="แนวทางถ่ายทำ" items={pack.shootingDirection} />
+    <div className="space-y-4">
+      <div className="grid gap-4 xl:grid-cols-2">
+        <OutputCard title="ฮุกเปิดคลิป" items={pack.hooks.slice(0, 5)} />
+        <OutputCard title="แคปชัน" items={pack.captions.slice(0, 3).map((caption) => `${caption.caption}\n${caption.hashtags.join(" ")}`)} />
+        <OutputCard title="สคริปต์สั้น" items={pack.scripts.slice(0, 2).map((script) => `${script.title}\n${script.scenes.join("\n")}`)} />
+        <OutputCard title="คำชวนติดต่อ" items={pack.ctaOptions} />
+      </div>
+      <details className="border-t border-slate-200 pt-3">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-950">ดูรายละเอียดประกอบเพิ่มเติม</summary>
+        <div className="mt-3 grid gap-3 xl:grid-cols-3">
+          <CompactOutputList title="ข้อความหน้าปก" items={pack.thumbnailTextIdeas} />
+          <CompactOutputList title="แนวทางถ่ายทำ" items={pack.shootingDirection} />
+          <CompactOutputList title="แฮชแท็ก" items={pack.hashtagSuggestions} />
+        </div>
+      </details>
     </div>
   );
 }
@@ -859,6 +873,21 @@ function OutputCard({ title, items }: { title: string; items: string[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CompactOutputList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
+      <ul className="mt-2 space-y-2">
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`} className="break-words text-sm leading-6 text-slate-700">
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
