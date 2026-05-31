@@ -25,6 +25,21 @@ Inspection only. No code changes were made during Step 1.
 - Some Thai text can display incorrectly in PowerShell output.
 - Dirty worktree changes may already exist and must be preserved.
 
+## 2026-05-31 Supabase Persistence Foundation
+
+Implementation notes:
+
+- Supabase is the selected persistence layer before OpenAI is expanded further.
+- `src/lib/persistence/supabase-store.ts` persists CEO command loop records to Supabase when configured and falls back to the shared local memory path when env vars are missing or Supabase rejects writes.
+- `POST /api/ceo/command` now attaches the Supabase persistence store through `CEOCommandService` adapters while preserving the existing response shape and deterministic/OpenAI fallback behavior.
+- `supabase/schema.sql` contains the simple foundation schema for `ceo_commands`, `ceo_plans`, `delegated_tasks`, `workflow_executions`, `approval_checkpoints`, and `memory_items`.
+- The schema uses UUID primary keys plus `external_id` columns because the current orchestration layer uses readable IDs such as `ceo-plan-*` and `workflow-execution-*`.
+- `.env.example` documents `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, and `OPENAI_MODEL`.
+
+Verification notes:
+
+- Focused test: `npm.cmd run test -- tests/unit/supabase-store.test.ts tests/unit/ceo-command-service.test.ts`.
+
 ## 2026-05-29 Command Loop And Memory Checkpoint Notes
 
 Implementation notes:
