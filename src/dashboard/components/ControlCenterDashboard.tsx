@@ -140,6 +140,7 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
         <KpiCardGrid viewModel={displayedViewModel} />
         <AgentCommandRoom />
         <WorkflowStepper />
+        <PlanReviewPanel viewModel={displayedViewModel} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
           <ActiveWorkList />
           <ApprovalQueue viewModel={displayedViewModel} approvalState={approvalState} onApprove={(id) => setApprovalState((current) => ({ ...current, [id]: "approved" }))} onApprovalDecision={commandPlanPreview ? updateApprovalDecision : undefined} />
@@ -231,7 +232,12 @@ function CeoCommandComposer({
             className="min-h-40 w-full resize-none rounded-3xl border border-blue-200/20 bg-[#0c1328]/90 px-5 py-4 text-base leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/60 focus:ring-4 focus:ring-blue-400/15"
           />
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.05] p-3">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-white">แนบข้อมูลให้ CEO AI วิเคราะห์</p>
+              <p className="text-xs text-slate-400">รองรับไฟล์ เอกสาร รูปภาพ และรายงาน</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -245,6 +251,7 @@ function CeoCommandComposer({
             <CommandToolButton type="button" onClick={() => fileInputRef.current?.click()} icon={<Upload size={16} />}>อัปโหลดไฟล์</CommandToolButton>
             <CommandToolButton type="button" onClick={() => setCommand(quickPrompts[0])} icon={<Sparkles size={16} />}>ตัวอย่างคำสั่ง</CommandToolButton>
             <CommandToolButton type="button" onClick={() => setReply("บันทึกเสียงยังเป็นตัวอย่าง UI: จะเชื่อมต่อภายหลังเมื่อระบบรับเสียงพร้อมใช้งาน")} icon={<Mic size={16} />}>บันทึกเสียง</CommandToolButton>
+            </div>
           </div>
 
           {attachedFiles.length ? (
@@ -384,6 +391,33 @@ function WorkflowStepper() {
             <p className="mt-4 text-sm font-semibold leading-6 text-white">{step}</p>
             {index === 3 ? <p className="mt-2 text-xs text-amber-200">รอคุณอนุมัติ</p> : null}
           </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PlanReviewPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
+  return (
+    <section id="ceo-plan" className="rounded-[28px] border border-blue-300/20 bg-blue-400/[0.07] p-5 sm:p-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <SectionTitle icon={<ClipboardCheck size={18} />} title="แผนที่ CEO AI เสนอให้ตรวจ" description={viewModel.planPanel.summary} />
+        <div className="flex flex-wrap gap-2">
+          <a href="#approval-queue" className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-400">ไปตรวจอนุมัติ</a>
+          <button type="button" className="rounded-2xl border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/12">เพิ่มเงื่อนไข</button>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+        {viewModel.planPanel.items.slice(0, 4).map((item, index) => (
+          <article key={`${item.owner}-${item.step}-${index}`} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-2xl bg-blue-500 text-sm font-semibold text-white">{index + 1}</span>
+              <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-blue-100">{item.status}</span>
+            </div>
+            <h3 className="mt-4 text-sm font-semibold leading-6 text-white">{item.step}</h3>
+            <p className="mt-2 text-xs font-medium text-slate-400">{item.owner}</p>
+            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">{item.detail}</p>
+          </article>
         ))}
       </div>
     </section>
