@@ -129,6 +129,40 @@ describe("CEO command dashboard client", () => {
     });
   });
 
+  it("surfaces OpenAI CEO brain risks and content workflow suggestions in the existing plan panel", () => {
+    const preview = createCeoCommandPlanPreview({
+      ...plan,
+      metadata: {
+        risks: ["ข้อความเรื่องสุขภาพต้องตรวจความถูกต้องก่อนเผยแพร่"],
+        contentWorkflowSuggestion: {
+          campaignAngle: "แม่มั่นใจ เลือกอย่างปลอดภัย",
+          postIdeas: ["เช็กลิสต์ก่อนเลือกผลิตภัณฑ์", "คำถามที่แม่มือใหม่ถามบ่อย"],
+          captions: ["เริ่มดูแลลูกด้วยข้อมูลที่มั่นใจ"],
+          creativeDirection: "ภาพสว่าง อบอุ่น ใช้ภาษาไทยเข้าใจง่าย",
+          nextApprovalNeeded: "อนุมัติ angle และ caption ชุดแรก"
+        }
+      }
+    });
+
+    expect(preview.planPanel.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          step: "ความเสี่ยงที่ CEO AI ให้ตรวจ",
+          owner: "CEO AI",
+          status: "รอตรวจ",
+          detail: "ข้อความเรื่องสุขภาพต้องตรวจความถูกต้องก่อนเผยแพร่"
+        }),
+        expect.objectContaining({
+          step: "ข้อเสนอ workflow คอนเทนต์",
+          owner: "Content AI",
+          status: "รออนุมัติ",
+          detail:
+            "มุมแคมเปญ: แม่มั่นใจ เลือกอย่างปลอดภัย | ไอเดียโพสต์: เช็กลิสต์ก่อนเลือกผลิตภัณฑ์ / คำถามที่แม่มือใหม่ถามบ่อย | แนวทางภาพ: ภาพสว่าง อบอุ่น ใช้ภาษาไทยเข้าใจง่าย | ต้องอนุมัติต่อ: อนุมัติ angle และ caption ชุดแรก"
+        })
+      ])
+    );
+  });
+
   it("updates approval states without exposing workflow internals", () => {
     const waiting = createCeoCommandPlanPreview(plan);
     const approved = applyCeoApprovalDecision(waiting, "approve");

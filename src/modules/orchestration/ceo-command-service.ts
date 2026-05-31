@@ -8,6 +8,7 @@ import type {
   MemoryCandidateScope,
   WorkflowExecution
 } from "@/modules/orchestration/types";
+import type { CEOBrainPlan, GenerateCEOBrainPlan } from "@/lib/ai/ceo-brain";
 
 export type CreateCEOPlanInput = {
   organizationId?: string;
@@ -39,6 +40,7 @@ export type CreateMemoryCandidateInput = {
 export type CEOCommandServiceAdapters = {
   now?: () => string;
   createId?: (prefix: string) => string;
+  generateCEOBrainPlan?: GenerateCEOBrainPlan;
   savePlan?: (plan: CEOPlan) => Promise<CEOPlan> | CEOPlan;
   saveMemoryCandidate?: (candidate: MemoryCandidate) => Promise<MemoryCandidate> | MemoryCandidate;
   executeWorkflow?: (execution: WorkflowExecution, plan: CEOPlan) => Promise<WorkflowExecution> | WorkflowExecution;
@@ -55,6 +57,11 @@ export class CEOCommandService {
 
   async createCEOPlanFromCommand(input: CreateCEOPlanInput): Promise<CEOPlan> {
     const command = this.createCommand(input);
+    const aiPlanResult = await this.tryCreateOpenAIBackedPlan(input, command);
+    if (aiPlanResult.plan) {
+      return this.persistPlan(aiPlanResult.plan);
+    }
+
     const workflowExecution = this.createWorkflowExecution(command);
     const delegatedTasks = this.createDelegatedTasks(command, workflowExecution.id);
     const approvalCheckpoint = this.createApprovalCheckpoint(command, workflowExecution.id);
@@ -85,6 +92,14 @@ export class CEOCommandService {
       metadata: {
         command,
         integrationMode: "deterministic_mock",
+        ...(aiPlanResult.fallbackReason
+          ? {
+              aiFallback: {
+                reason: aiPlanResult.fallbackReason,
+                userMessage: "CEO AI ใช้โหมดสำรองชั่วคราว เพราะยังเชื่อมต่อสมอง AI จริงไม่ได้"
+              }
+            }
+          : {}),
         futureIntegrationPoints: ["ai_planner", "database_repository", "workflow_engine"]
       }
     };
@@ -232,6 +247,108 @@ export class CEOCommandService {
     };
   }
 
+  private async tryCreateOpenAIBackedPlan(
+    input: CreateCEOPlanInput,
+    command: CEOCommand
+  ): Promise<{ plan?: CEOPlan; fallbackReason?: string }> {
+    if (!this.adapters.generateCEOBrainPlan) {
+      return {};
+    }
+
+    try {
+      const brainPlan = await this.adapters.generateCEOBrainPlan(input);
+      if (!brainPlan) {
+        return { fallbackReason: "OPENAI_API_KEY is not configured." };
+      }
+
+      return { plan: this.createPlanFromCEOBrain(command, brainPlan) };
+    } catch (error) {
+      return { fallbackReason: error instanceof Error ? error.message : "OpenAI CEO brain failed." };
+    }
+  }
+
+  private createPlanFromCEOBrain(command: CEOCommand, brainPlan: CEOBrainPlan): CEOPlan {
+    const workflowExecution = this.createWorkflowExecution(command);
+    const delegatedTasks = brainPlan.delegatedTasks.map((task) =>
+      this.createDelegatedTaskFromCEOBrain(task, command, workflowExecution.id)
+    );
+    const approvalCheckpoints = brainPlan.approvalCheckpoints.map((checkpoint) =>
+      this.createApprovalCheckpointFromCEOBrain(checkpoint, command, workflowExecution.id)
+    );
+    const memoryCandidate = this.createMemoryCandidate({
+      title: brainPlan.title,
+      content: `${brainPlan.summary}\n\n${brainPlan.recommendedStrategy}`,
+      scope: "task_history",
+      relatedCommandId: command.id,
+      relatedWorkflowExecutionId: workflowExecution.id,
+      importance: 7,
+      tags: ["ceo-command", "openai-brain", command.intent ?? "answer"]
+    });
+
+    return {
+      id: this.createId("ceo-plan"),
+      commandId: command.id,
+      summary: brainPlan.summary,
+      status: "waiting_approval",
+      recommendedActions: brainPlan.steps,
+      delegatedTasks,
+      approvalCheckpoints,
+      workflowExecutions: [
+        {
+          ...workflowExecution,
+          delegatedTaskIds: delegatedTasks.map((task) => task.id),
+          approvalCheckpoints
+        }
+      ],
+      memoryCandidates: [memoryCandidate],
+      metadata: {
+        command,
+        integrationMode: "openai_responses_api",
+        title: brainPlan.title,
+        recommendedStrategy: brainPlan.recommendedStrategy,
+        risks: brainPlan.risks,
+        contentWorkflowSuggestion: brainPlan.contentWorkflowSuggestion
+      }
+    };
+  }
+
+  private createDelegatedTaskFromCEOBrain(
+    task: CEOBrainPlan["delegatedTasks"][number],
+    command: CEOCommand,
+    workflowExecutionId: string
+  ): DelegatedTask {
+    return {
+      id: this.createId("delegated-task"),
+      title: task.task,
+      description: `${task.department}: ${task.task}`,
+      ownerAgentId: toOwnerAgentId(task.agentName),
+      status: toDelegatedTaskStatus(task.status),
+      priority: command.intent === "start_workflow" ? "high" : "medium",
+      expectedOutput: task.expectedOutput,
+      approvalRequired: true,
+      workflowExecutionId,
+      metadata: { commandId: command.id, department: task.department, agentName: task.agentName }
+    };
+  }
+
+  private createApprovalCheckpointFromCEOBrain(
+    checkpoint: CEOBrainPlan["approvalCheckpoints"][number],
+    command: CEOCommand,
+    workflowExecutionId: string
+  ): ApprovalCheckpoint {
+    return {
+      id: this.createId("approval-checkpoint"),
+      title: checkpoint.label,
+      domain: command.intent === "start_workflow" ? "publishing" : "workflow",
+      requiredApprovers: ["human"],
+      status: toApprovalCheckpointStatus(checkpoint.status),
+      riskLevel: "medium",
+      relatedWorkflowExecutionId: workflowExecutionId,
+      summary: checkpoint.description,
+      metadata: { commandId: command.id, sourceStatus: checkpoint.status }
+    };
+  }
+
   private buildPlanSummary(command: CEOCommand) {
     if (command.intent === "start_workflow") {
       return `CEO AI prepared an approval-gated content workflow plan for: ${command.command}`;
@@ -253,4 +370,35 @@ function detectIntent(command: string): CEOCommandIntent {
   if (lower.includes("รายงาน") || lower.includes("report")) return "report";
   if (lower.includes("แผน") || lower.includes("strategy") || lower.includes("roadmap")) return "plan";
   return "answer";
+}
+
+function toOwnerAgentId(agentName: string) {
+  const normalized = agentName.toLowerCase();
+  if (normalized.includes("marketing")) return "marketing-ai";
+  if (normalized.includes("content")) return "content-creator";
+  if (normalized.includes("design")) return "design-ai";
+  if (normalized.includes("sales")) return "sales-ai";
+  if (normalized.includes("finance")) return "finance-ai";
+  if (normalized.includes("operations")) return "operations-ai";
+  if (normalized.includes("r&d") || normalized.includes("research")) return "rd-ai";
+  return "ceo-ai";
+}
+
+function toDelegatedTaskStatus(status: string): DelegatedTask["status"] {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("progress")) return "in_progress";
+  if (normalized.includes("approval")) return "waiting_approval";
+  if (normalized.includes("complete") || normalized.includes("done")) return "completed";
+  if (normalized.includes("block")) return "blocked";
+  if (normalized.includes("assign")) return "assigned";
+  return "queued";
+}
+
+function toApprovalCheckpointStatus(status: string): ApprovalCheckpoint["status"] {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("approve")) return "approved";
+  if (normalized.includes("reject")) return "rejected";
+  if (normalized.includes("change") || normalized.includes("revision")) return "changes_requested";
+  if (normalized.includes("not")) return "not_required";
+  return "requested";
 }

@@ -91,6 +91,7 @@ export function createCeoCommandPlanPreview(plan: CEOPlan): CeoCommandPlanPrevie
     status: mapApprovalStatus(checkpoint.status),
     detail: toBusinessDetail(checkpoint.summary)
   }));
+  const ceoBrainItems = createCEOBrainPreviewItems(plan.metadata);
   const requestedApprovals = plan.approvalCheckpoints.filter((checkpoint) => checkpoint.status === "requested");
 
   return {
@@ -107,7 +108,8 @@ export function createCeoCommandPlanPreview(plan: CEOPlan): CeoCommandPlanPrevie
           detail: toPlanDisplaySummary(plan)
         },
         ...delegatedItems,
-        ...approvalItems
+        ...approvalItems,
+        ...ceoBrainItems
       ]
     },
     delegatedAgents: plan.delegatedTasks.map((task) => ({
@@ -302,6 +304,66 @@ function toBusinessDetail(detail: string | undefined) {
   }
 
   return detail;
+}
+
+function createCEOBrainPreviewItems(metadata: CEOPlan["metadata"]): CeoCommandPlanPreview["planPanel"]["items"] {
+  const risks = readStringArrayMetadata(metadata, "risks");
+  const workflowSuggestion = readContentWorkflowSuggestion(metadata);
+  const items: CeoCommandPlanPreview["planPanel"]["items"] = [];
+
+  if (risks.length > 0) {
+    items.push({
+      step: "ความเสี่ยงที่ CEO AI ให้ตรวจ",
+      owner: "CEO AI",
+      status: "รอตรวจ",
+      detail: risks.join(" / ")
+    });
+  }
+
+  if (workflowSuggestion) {
+    items.push({
+      step: "ข้อเสนอ workflow คอนเทนต์",
+      owner: "Content AI",
+      status: "รออนุมัติ",
+      detail: [
+        `มุมแคมเปญ: ${workflowSuggestion.campaignAngle}`,
+        workflowSuggestion.postIdeas.length > 0 ? `ไอเดียโพสต์: ${workflowSuggestion.postIdeas.join(" / ")}` : undefined,
+        `แนวทางภาพ: ${workflowSuggestion.creativeDirection}`,
+        `ต้องอนุมัติต่อ: ${workflowSuggestion.nextApprovalNeeded}`
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    });
+  }
+
+  return items;
+}
+
+function readStringArrayMetadata(metadata: CEOPlan["metadata"], key: string) {
+  const value = metadata?.[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
+}
+
+function readContentWorkflowSuggestion(metadata: CEOPlan["metadata"]) {
+  const value = metadata?.contentWorkflowSuggestion;
+  if (!value || typeof value !== "object") return null;
+
+  const suggestion = value as Record<string, unknown>;
+  const campaignAngle = typeof suggestion.campaignAngle === "string" ? suggestion.campaignAngle : "";
+  const postIdeas = Array.isArray(suggestion.postIdeas)
+    ? suggestion.postIdeas.filter((item): item is string => typeof item === "string" && item.length > 0)
+    : [];
+  const creativeDirection = typeof suggestion.creativeDirection === "string" ? suggestion.creativeDirection : "";
+  const nextApprovalNeeded = typeof suggestion.nextApprovalNeeded === "string" ? suggestion.nextApprovalNeeded : "";
+
+  if (!campaignAngle || !creativeDirection || !nextApprovalNeeded) return null;
+
+  return {
+    campaignAngle,
+    postIdeas,
+    creativeDirection,
+    nextApprovalNeeded
+  };
 }
 
 function mapDelegatedTaskStatus(status: CEOPlan["delegatedTasks"][number]["status"]) {

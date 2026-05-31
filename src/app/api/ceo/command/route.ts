@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createCEOBrainPlanWithOpenAI } from "@/lib/ai/openai-provider";
 import { CEOCommandService } from "@/modules/orchestration/ceo-command-service";
 
 const commandSchema = z.object({
@@ -17,7 +18,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "คำสั่งไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const service = new CEOCommandService();
+  const service = new CEOCommandService({
+    generateCEOBrainPlan: createCEOBrainPlanWithOpenAI
+  });
   const plan = await service.createCEOPlanFromCommand(parsed.data);
   return NextResponse.json({ ok: true, plan });
 }
