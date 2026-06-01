@@ -56,7 +56,7 @@ describe("CEO command dashboard client", () => {
       userId: "user-001"
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/ceo/command", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/ceo-command", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -216,5 +216,22 @@ describe("CEO command dashboard client", () => {
     );
 
     await expect(submitCeoDashboardCommand({ command: "" })).rejects.toThrow("คำสั่งไม่ถูกต้อง");
+  });
+
+  it("surfaces a friendly Thai fallback error when the API response is not JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error("Invalid JSON");
+        }
+      })
+    );
+
+    await expect(submitCeoDashboardCommand({ command: "ช่วยสรุปงานวันนี้" })).rejects.toThrow(
+      "CEO AI ยังรับคำสั่งไม่ได้ชั่วคราว กรุณาลองใหม่อีกครั้ง"
+    );
   });
 });

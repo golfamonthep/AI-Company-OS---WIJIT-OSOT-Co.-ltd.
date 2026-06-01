@@ -162,5 +162,45 @@ describe("createSupabasePersistenceStore", () => {
         organization_id: "org-rejected"
       })
     ]);
+    expect(store.getWriteReport()).toMatchObject({
+      supabaseConfigured: true,
+      persistedToSupabase: false,
+      usedFallback: true,
+      lastError: "permission denied for table memory_items"
+    });
+  });
+
+  it("falls back the CEO plan row itself when Supabase rejects ceo_plans", async () => {
+    const rejectedTables: string[] = [];
+    const rejectingSupabase = {
+      from: (table: string) => ({
+        insert: () => ({
+          select: () => ({
+            single: async () => {
+              rejectedTables.push(table);
+              return { data: null, error: { message: `permission denied for table ${table}` } };
+            }
+          })
+        }),
+        select: () => ({
+          eq: () => ({
+            order: () => ({
+              limit: async () => ({ data: [], error: null })
+            })
+          })
+        })
+      })
+    };
+    const store = createSupabasePersistenceStore({ supabase: rejectingSupabase as never });
+
+    await store.saveCEOPlan(basePlan);
+
+    expect(rejectedTables).toContain("ceo_plans");
+    expect(store.getWriteReport()).toMatchObject({
+      supabaseConfigured: true,
+      persistedToSupabase: false,
+      usedFallback: true,
+      lastError: "permission denied for table memory_items"
+    });
   });
 });

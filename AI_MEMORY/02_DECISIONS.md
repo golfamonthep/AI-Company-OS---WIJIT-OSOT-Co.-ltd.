@@ -19,6 +19,7 @@
 - Dashboard UX direction: `/dashboard` now uses a premium dark CEO AI Command Center shell with sidebar, top header, prominent command composer, agent command room, approval queue, outputs, memory, and system status. Preserve the CEO AI-first, approval-first mental model when editing this surface.
 - Supabase persistence foundation direction: CEO command loop persistence now targets Supabase first through `src/lib/persistence/supabase-store.ts`, with local in-memory fallback when env vars are missing or Supabase rejects writes.
 - Supabase schema direction: `supabase/schema.sql` defines the initial CEO command persistence tables (`ceo_commands`, `ceo_plans`, `delegated_tasks`, `workflow_executions`, `approval_checkpoints`, `memory_items`) with UUID primary keys and `external_id` fields for current app-level IDs.
+- Production readiness direction: Dashboard command submission uses `/api/ceo-command` as the canonical route. The old `/api/ceo/command` path remains as a compatibility export. `/api/health` reports only booleans for OpenAI/Supabase configuration and `appMode`, never secret values.
 
 ## Implementation Defaults
 

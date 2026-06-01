@@ -24,6 +24,13 @@ type PersistableRecord = BaseRecord & {
   [key: string]: unknown;
 };
 
+export type SupabasePersistenceWriteReport = {
+  supabaseConfigured: boolean;
+  persistedToSupabase: boolean;
+  usedFallback: boolean;
+  lastError?: string;
+};
+
 export type MemoryItemInput = {
   id?: string;
   organizationId?: string;
@@ -64,6 +71,11 @@ export function createSupabasePersistenceStore(options: StoreOptions = {}) {
   const persistence = new PersistenceService(runtimeClient);
   const fallbackPersistence = new PersistenceService(null);
   const useFallbackIds = !runtimeClient;
+  const writeReport: SupabasePersistenceWriteReport = {
+    supabaseConfigured: Boolean(runtimeClient),
+    persistedToSupabase: false,
+    usedFallback: false
+  };
 
   async function saveCEOCommand(command: CEOCommand) {
     await persist("ceo_commands", toCEOCommandRecord(command, useFallbackIds));
@@ -76,7 +88,7 @@ export function createSupabasePersistenceStore(options: StoreOptions = {}) {
       await saveCEOCommand(command);
     }
 
-    await persistence.create("ceo_plans", toCEOPlanRecord(plan, command, useFallbackIds));
+    await persist("ceo_plans", toCEOPlanRecord(plan, command, useFallbackIds));
     await saveDelegatedTasks(plan.delegatedTasks, plan, command);
     await Promise.all(plan.workflowExecutions.map((execution) => saveWorkflowExecution(execution, plan, command)));
     await Promise.all(plan.approvalCheckpoints.map((checkpoint) => saveApprovalCheckpoint(checkpoint, plan, command)));
@@ -138,7 +150,17 @@ export function createSupabasePersistenceStore(options: StoreOptions = {}) {
 
   async function persist(table: string, record: PersistableRecord) {
     const result = await persistence.create(table, record);
-    if (result.status !== "failed") return result;
+    if (result.status !== "failed") {
+      if (result.source === "supabase") {
+        writeReport.persistedToSupabase = true;
+      } else {
+        writeReport.usedFallback = true;
+      }
+      return result;
+    }
+
+    writeReport.lastError = result.error;
+    writeReport.usedFallback = true;
     return fallbackPersistence.create(table, withFallbackId(record));
   }
 
@@ -150,6 +172,7 @@ export function createSupabasePersistenceStore(options: StoreOptions = {}) {
     saveApprovalCheckpoint,
     saveMemoryItem,
     listMemoryItems,
+    getWriteReport: () => ({ ...writeReport }),
     isConfigured: () => persistence.isConfigured()
   };
 }

@@ -54,8 +54,10 @@ type CEOCommandApiResponse = {
   error?: string;
 };
 
+const commandApiFallbackError = "CEO AI ยังรับคำสั่งไม่ได้ชั่วคราว กรุณาลองใหม่อีกครั้ง";
+
 export async function submitCeoDashboardCommand(input: SubmitCeoDashboardCommandInput): Promise<SubmitCeoDashboardCommandResult> {
-  const response = await fetch("/api/ceo/command", {
+  const response = await fetch("/api/ceo-command", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -64,10 +66,10 @@ export async function submitCeoDashboardCommand(input: SubmitCeoDashboardCommand
       userId: input.userId
     })
   });
-  const payload = (await response.json()) as CEOCommandApiResponse;
+  const payload = await readCEOCommandApiResponse(response);
 
   if (!response.ok || !payload.ok || !payload.plan) {
-    throw new Error(payload.error ?? "CEO AI ยังไม่สามารถรับคำสั่งนี้ได้");
+    throw new Error(payload.error ?? commandApiFallbackError);
   }
 
   return {
@@ -75,6 +77,14 @@ export async function submitCeoDashboardCommand(input: SubmitCeoDashboardCommand
     reply: formatCeoCommandPlanReply(payload.plan),
     preview: createCeoCommandPlanPreview(payload.plan)
   };
+}
+
+async function readCEOCommandApiResponse(response: Response): Promise<CEOCommandApiResponse> {
+  try {
+    return (await response.json()) as CEOCommandApiResponse;
+  } catch {
+    return { ok: false, error: commandApiFallbackError };
+  }
 }
 
 export function createCeoCommandPlanPreview(plan: CEOPlan): CeoCommandPlanPreview {
