@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2, Users, Download, Trash2, Plus } from "lucide-react";
+
 
 /**
  * Design: Facebook Ads Performance Analyzer
@@ -46,6 +47,21 @@ interface BusinessHealthCheck {
   holisticRecommendations: string[];
 }
 
+interface LookalikeCustomer {
+  name: string;
+  age: number;
+  interests: string;
+  purchaseFrequency: string;
+}
+
+interface AnalysisHistory {
+  id: string;
+  timestamp: number;
+  metrics: AdMetrics;
+  analysis: AnalysisResult;
+  businessHealth: BusinessHealthCheck | null;
+}
+
 export default function Home() {
   const [metrics, setMetrics] = useState<AdMetrics>({
     budget: 0,
@@ -61,6 +77,40 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [businessHealth, setBusinessHealth] = useState<BusinessHealthCheck | null>(null);
   const [activeTab, setActiveTab] = useState("input");
+  const [lookalikeCustomers, setLookalikeCustomers] = useState<LookalikeCustomer[]>([]);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([]);
+  const [newCustomer, setNewCustomer] = useState<LookalikeCustomer>({
+    name: "",
+    age: 0,
+    interests: "",
+    purchaseFrequency: "monthly"
+  });
+
+  // Load history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("analysisHistory");
+    if (saved) {
+      try {
+        setAnalysisHistory(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load history", e);
+      }
+    }
+  }, []);
+
+  // Save history to localStorage
+  const saveToHistory = (newAnalysis: AnalysisResult, newBusinessHealth: BusinessHealthCheck | null) => {
+    const newEntry: AnalysisHistory = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      metrics: { ...metrics },
+      analysis: newAnalysis,
+      businessHealth: newBusinessHealth
+    };
+    const updated = [newEntry, ...analysisHistory].slice(0, 20); // Keep last 20
+    setAnalysisHistory(updated);
+    localStorage.setItem("analysisHistory", JSON.stringify(updated));
+  };
 
   const handleInputChange = (field: keyof AdMetrics, value: any) => {
     setMetrics(prev => ({
@@ -144,7 +194,7 @@ export default function Home() {
       recommendations.push("📈 ROAS ดี - พิจารณาเพิ่ม Budget เพื่อ Scale แคมเปญ");
     }
 
-    setAnalysis({
+    const result = {
       roas: Math.round(roas * 100) / 100,
       cpc: Math.round(cpc * 100) / 100,
       ctr: Math.round(ctr * 100) / 100,
@@ -152,8 +202,9 @@ export default function Home() {
       complianceIssues,
       recommendations,
       score: Math.max(0, score)
-    });
-
+    };
+    setAnalysis(result);
+    saveToHistory(result, null);
     setActiveTab("results");
   };
 
@@ -243,7 +294,7 @@ export default function Home() {
     holisticRecommendations.push("🎯 ใช้ Retargeting: ทำ Remarketing แคมเปญให้ผู้ที่ดูแล้วแต่ยังไม่ซื้อ");
     holisticRecommendations.push("🎯 วิเคราะห์คู่แข่ง: ดูว่าคู่แข่งใช้ Creative, Promotion, Audience แบบไหน");
 
-    setBusinessHealth({
+    const healthResult = {
       audienceScore,
       promotionScore,
       creativeScore,
@@ -252,7 +303,73 @@ export default function Home() {
       issues,
       rootCauses,
       holisticRecommendations,
-    });
+    };
+    setBusinessHealth(healthResult);
+    if (analysis) {
+      saveToHistory(analysis, healthResult);
+    }
+  };
+
+  const addLookalikeCustomer = () => {
+    if (!newCustomer.name || newCustomer.age === 0) {
+      alert("กรุณากรอกชื่อและอายุ");
+      return;
+    }
+    setLookalikeCustomers([...lookalikeCustomers, newCustomer]);
+    setNewCustomer({ name: "", age: 0, interests: "", purchaseFrequency: "monthly" });
+  };
+
+  const removeLookalikeCustomer = (index: number) => {
+    setLookalikeCustomers(lookalikeCustomers.filter((_, i) => i !== index));
+  };
+
+  const generateLookalikeProfile = () => {
+    if (lookalikeCustomers.length === 0) {
+      alert("กรุณาเพิ่มลูกค้าอย่างน้อย 1 คน");
+      return;
+    }
+
+    const avgAge = Math.round(lookalikeCustomers.reduce((sum, c) => sum + c.age, 0) / lookalikeCustomers.length);
+    const allInterests = lookalikeCustomers.flatMap(c => c.interests.split(",")).filter(i => i);
+    const uniqueInterests = Array.from(new Set(allInterests));
+    const topInterests = uniqueInterests.slice(0, 5);
+
+    return {
+      ageRange: `${Math.max(18, avgAge - 5)}-${avgAge + 5} ปี`,
+      interests: topInterests,
+      purchaseFrequency: lookalikeCustomers[0].purchaseFrequency,
+      size: lookalikeCustomers.length
+    };
+  };
+
+  const exportToJSON = () => {
+    if (!analysis) {
+      alert("กรุณาวิเคราะห์โฆษณาก่อน");
+      return;
+    }
+
+    const report = {
+      date: new Date().toLocaleDateString('th-TH'),
+      metrics: metrics,
+      analysis: analysis,
+      businessHealth: businessHealth
+    };
+
+    const dataStr = JSON.stringify(report, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `facebook-ads-report-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearHistory = () => {
+    if (confirm("คุณแน่ใจว่าต้องการลบประวัติหมดเดิมหมดใช่หรือไม่")) {
+      setAnalysisHistory([]);
+      localStorage.removeItem("analysisHistory");
+    }
   };
 
   const resetForm = () => {
@@ -524,22 +641,36 @@ export default function Home() {
                 </Card>
 
                 {/* Action Buttons */}
-                <div className="flex gap-4">
+                <div className="flex gap-4 flex-wrap">
                   <Button 
                     onClick={() => {
                       analyzeBusinessHealth();
                       setActiveTab("business");
                     }}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                    className="flex-1 min-w-max bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
                   >
                     <Building2 className="w-5 h-5 mr-2" />
-                    🏢 ตรวจสอบสุขภาพธุรกิจ
+                    🏢 สุขภาพธุรกิจ
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("lookalike")}
+                    className="flex-1 min-w-max bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    👥 Lookalike
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("history")}
+                    className="flex-1 min-w-max bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    📊 ประวัติ
                   </Button>
                   <Button 
                     onClick={() => setActiveTab("input")}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+                    className="flex-1 min-w-max bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
                   >
-                    วิเคราะห์โฆษณาอื่น
+                    วิเคราะห์อื่น
                   </Button>
                 </div>
               </div>
@@ -647,6 +778,232 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* Lookalike Audience Tab */}
+          <div className={activeTab === "lookalike" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-lg mb-2">👥 Lookalike Audience Generator</p>
+                    <h2 className="text-3xl font-bold">สร้าง Audience ที่คล้ายลูกค้าของคุณ</h2>
+                  </div>
+                  <Users className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Input Form */}
+                <div className="lg:col-span-2">
+                  <Card className="p-6 border-0 shadow-lg">
+                    <h3 className="text-xl font-bold text-blue-900 mb-6">เพิ่มข้อมูลลูกค้า</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="font-semibold mb-2 block">ชื่อลูกค้า</Label>
+                        <Input 
+                          placeholder="เช่น สมชาย"
+                          value={newCustomer.name}
+                          onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="font-semibold mb-2 block">อายุ</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="เช่น 35"
+                          value={newCustomer.age || ""}
+                          onChange={(e) => setNewCustomer({...newCustomer, age: parseInt(e.target.value) || 0})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="font-semibold mb-2 block">ความสนใจ (คั่นด้วยจุลภาค)</Label>
+                        <Input 
+                          placeholder="เช่น สุขภาพ, ฟิตเนส, สมุนไพร"
+                          value={newCustomer.interests}
+                          onChange={(e) => setNewCustomer({...newCustomer, interests: e.target.value})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="font-semibold mb-2 block">ความถี่ในการซื้อ</Label>
+                        <select 
+                          value={newCustomer.purchaseFrequency}
+                          onChange={(e) => setNewCustomer({...newCustomer, purchaseFrequency: e.target.value})}
+                          className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="monthly">รายเดือน</option>
+                          <option value="quarterly">รายไตรมาส</option>
+                          <option value="yearly">รายปี</option>
+                          <option value="once">ครั้งเดียว</option>
+                        </select>
+                      </div>
+
+                      <Button 
+                        onClick={addLookalikeCustomer}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+                      >
+                        <Plus className="w-5 h-5 mr-2" />
+                        เพิ่มลูกค้า
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Lookalike Profile */}
+                <div>
+                  {lookalikeCustomers.length > 0 && (() => {
+                    const profile = generateLookalikeProfile();
+                    if (!profile) return null;
+                    return (
+                      <Card className="p-6 border-0 shadow-lg bg-gradient-to-br from-cyan-50 to-blue-50">
+                        <h3 className="font-bold text-blue-900 mb-4">📊 Lookalike Profile</h3>
+                        <div className="space-y-3 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">ช่วงอายุ</p>
+                            <p className="font-semibold text-blue-900">{profile.ageRange}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">ความสนใจหลัก</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {profile.interests.map((interest, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-blue-200 text-blue-900 rounded-full text-xs">
+                                  {interest.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">ความถี่ซื้อ</p>
+                            <p className="font-semibold text-blue-900">{profile.purchaseFrequency}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">จำนวนลูกค้าตัวอย่าง</p>
+                            <p className="font-semibold text-blue-900">{profile.size} คน</p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Customer List */}
+              {lookalikeCustomers.length > 0 && (
+                <Card className="p-6 border-0 shadow-lg">
+                  <h3 className="font-bold text-blue-900 mb-4">ลูกค้าที่เพิ่มแล้ว ({lookalikeCustomers.length})</h3>
+                  <div className="space-y-2">
+                    {lookalikeCustomers.map((customer, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div>
+                          <p className="font-semibold text-blue-900">{customer.name}</p>
+                          <p className="text-xs text-muted-foreground">{customer.age} ปี • {customer.interests}</p>
+                        </div>
+                        <Button 
+                          onClick={() => removeLookalikeCustomer(idx)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                <Button 
+                  onClick={() => setActiveTab("input")}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+                >
+                  ← กลับไปวิเคราะห์โฆษณา
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* History Tab */}
+          <div className={activeTab === "history" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100 text-lg mb-2">📊 ประวัติการวิเคราะห์</p>
+                    <h2 className="text-3xl font-bold">บันทึกการวิเคราะห์ {analysisHistory.length} รายการ</h2>
+                  </div>
+                </div>
+              </Card>
+
+              {analysisHistory.length === 0 ? (
+                <Card className="p-8 border-0 shadow-lg text-center">
+                  <p className="text-muted-foreground text-lg">ยังไม่มีประวัติการวิเคราะห์</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {analysisHistory.map((entry, idx) => (
+                    <Card key={entry.id} className="p-6 border-0 shadow-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(entry.timestamp).toLocaleDateString('th-TH', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                          <div className="mt-3 grid grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground">ROAS</p>
+                              <p className="font-bold text-green-600">{entry.analysis.roas}x</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">CTR</p>
+                              <p className="font-bold text-blue-600">{entry.analysis.ctr}%</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">CPC</p>
+                              <p className="font-bold text-amber-600">฿{entry.analysis.cpc}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Score</p>
+                              <p className="font-bold text-purple-600">{entry.analysis.score}/100</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                <Button 
+                  onClick={exportToJSON}
+                  disabled={analysisHistory.length === 0}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 disabled:opacity-50"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  ส่งออก JSON
+                </Button>
+                <Button 
+                  onClick={clearHistory}
+                  disabled={analysisHistory.length === 0}
+                  variant="outline"
+                  className="flex-1 font-semibold py-3 disabled:opacity-50"
+                >
+                  <Trash2 className="w-5 h-5 mr-2" />
+                  ลบประวัติ
+                </Button>
+              </div>
+            </div>
+          </div>
         </Tabs>
       </main>
 
