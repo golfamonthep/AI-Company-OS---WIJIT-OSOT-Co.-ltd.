@@ -209,5 +209,5 @@ export function getLoginUrl(returnPath?: string) {
   if (!portalUrl || !appId) return "/";
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const state = btoa(JSON.stringify({ origin, returnPath: returnPath || "/" }));
-  return `${portalUrl}/oauth/authorize?app_id=${appId}&state=${encodeURIComponent(state)}`;
+  return `${portalUrl}/login?app_id=${appId}&state=${encodeURIComponent(state)}`;
 }
