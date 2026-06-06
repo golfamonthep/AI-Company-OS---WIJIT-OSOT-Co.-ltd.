@@ -10,6 +10,7 @@ import { createCeoCommandCenterViewModel, type CeoCommandCenterViewModel } from 
 import { createMultiPlatformCommandCenterModel, type PlatformAgent, type PlatformOutput, type PlatformTask, type PlatformWorkflow } from "@/dashboard/multi-platform-command-center";
 import { createMockLiveDashboardSnapshot } from "@/dashboard/mock-snapshot";
 import type { LiveDashboardSnapshot } from "@/dashboard/types";
+import type { ProductionHealth } from "@/lib/production-health";
 
 type DashboardWorkspaceSession = {
   workspaceName: string;
@@ -19,6 +20,8 @@ type DashboardWorkspaceSession = {
   readOnly: boolean;
   mockedAuth: boolean;
 };
+
+type DashboardProductionHealth = Pick<ProductionHealth, "appMode" | "aiMode" | "databaseMode" | "openaiModel">;
 
 const quickPrompts = [
   "วางแผนเปิดตัวสินค้าใหม่",
@@ -47,6 +50,7 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
   const [refreshing, setRefreshing] = useState(false);
   const [commandPlanPreview, setCommandPlanPreview] = useState<CeoCommandPlanPreview | null>(null);
   const [approvalState, setApprovalState] = useState<Record<string, "pending" | "approved">>({});
+  const [productionHealth, setProductionHealth] = useState<DashboardProductionHealth | null>(null);
   const platformModel = createMultiPlatformCommandCenterModel();
   const viewModel = createCeoCommandCenterViewModel(liveSnapshot, snapshotStatus);
   const displayedViewModel = commandPlanPreview
@@ -105,6 +109,38 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
     };
   }, [refreshLiveSnapshot]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshProductionHealth() {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" });
+        if (!response.ok) throw new Error(`Health check failed with ${response.status}`);
+        const payload = (await response.json()) as DashboardProductionHealth;
+        if (!cancelled) setProductionHealth(payload);
+      } catch {
+        if (!cancelled) {
+          setProductionHealth({
+            appMode: "mock",
+            aiMode: "fallback",
+            databaseMode: "memory",
+            openaiModel: "gpt-4.1"
+          });
+        }
+      }
+    }
+
+    void refreshProductionHealth();
+    const interval = window.setInterval(() => {
+      void refreshProductionHealth();
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   return (
     <DashboardLayoutSystem workspaceSession={workspaceSession}>
       <div className="space-y-5">
@@ -124,7 +160,7 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
         <LatestPlatformOutputs outputs={platformModel.outputs} agents={platformModel.platformAgents} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px_360px]">
           <CompanyMemoryPanel viewModel={displayedViewModel} />
-          <SystemStatusPanel />
+          <SystemStatusPanel health={productionHealth} />
           <DailyBriefPanel viewModel={displayedViewModel} />
         </div>
       </div>
@@ -589,20 +625,43 @@ function CompanyMemoryPanel({ viewModel }: { viewModel: CeoCommandCenterViewMode
   );
 }
 
-function SystemStatusPanel() {
+function SystemStatusPanel({ health }: { health: DashboardProductionHealth | null }) {
+  const statusRows = createSystemStatusRows(health);
+
   return (
     <section className={`${glassPanelClass} p-4`}>
       <SectionTitle icon={<Database size={18} />} title="สถานะระบบ" description="บริการหลักพร้อมช่วย CEO AI ทำงาน" />
       <div className="mt-4 space-y-3">
-        {systemStatus.map((item) => (
+        {statusRows.map((item) => (
           <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/[0.24] px-3 py-2">
             <span className="text-sm text-slate-300">{item.label}</span>
-            <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-200">{item.status}</span>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.tone}`}>{item.status}</span>
           </div>
         ))}
       </div>
     </section>
   );
+}
+
+function createSystemStatusRows(health: DashboardProductionHealth | null) {
+  const appMode = health?.appMode ?? "mock";
+  const modeLabel = toAppModeLabel(appMode);
+  const modeTone = appMode === "real" ? "bg-emerald-400/10 text-emerald-200" : appMode === "partial" ? "bg-amber-400/10 text-amber-200" : "bg-slate-400/10 text-slate-300";
+  const labels = systemStatus.map((item) => item.label);
+
+  return [
+    { label: labels[0] ?? "AI Services", status: health?.aiMode === "openai" ? modeLabel : "โหมดทดลอง", tone: health?.aiMode === "openai" ? modeTone : "bg-slate-400/10 text-slate-300" },
+    { label: labels[1] ?? "Database", status: health?.databaseMode === "supabase" ? modeLabel : "โหมดทดลอง", tone: health?.databaseMode === "supabase" ? modeTone : "bg-slate-400/10 text-slate-300" },
+    { label: labels[2] ?? "Storage", status: modeLabel, tone: modeTone },
+    { label: labels[3] ?? "Memory System", status: health?.databaseMode === "supabase" ? modeLabel : "โหมดทดลอง", tone: health?.databaseMode === "supabase" ? modeTone : "bg-slate-400/10 text-slate-300" },
+    { label: labels[4] ?? "Notification", status: modeLabel, tone: modeTone }
+  ];
+}
+
+function toAppModeLabel(mode: DashboardProductionHealth["appMode"]) {
+  if (mode === "real") return "ใช้งานจริง";
+  if (mode === "partial") return "เชื่อมต่อบางส่วน";
+  return "โหมดทดลอง";
 }
 
 function DailyBriefPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {

@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import { getProductionHealth } from "@/lib/production-health";
 import { POST as postCEOCommand } from "@/app/api/ceo-command/route";
+import { GET as getProductionCheck } from "@/app/api/production-check/route";
 import type { CEOPlan } from "@/modules/orchestration/types";
 
 describe("production API readiness", () => {
@@ -18,25 +19,93 @@ describe("production API readiness", () => {
 
     const health = getProductionHealth();
 
-    expect(health).toEqual({
+    expect(health).toMatchObject({
       openaiConfigured: true,
-      supabaseConfigured: true,
-      appMode: "real"
+      supabaseUrlConfigured: true,
+      supabaseAnonConfigured: true,
+      supabaseServiceConfigured: false,
+      appMode: "partial",
+      openaiModel: "gpt-4.1",
+      databaseMode: "supabase",
+      aiMode: "openai"
     });
+    expect(health.timestamp).toEqual(expect.any(String));
     expect(JSON.stringify(health)).not.toContain("sk-secret");
     expect(JSON.stringify(health)).not.toContain("anon-secret");
   });
 
-  it("falls back to mock app mode when a required production integration is missing", () => {
-    vi.stubEnv("OPENAI_API_KEY", "");
+  it("reports real app mode only when OpenAI and Supabase service persistence are configured", () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-secret");
+    vi.stubEnv("OPENAI_MODEL", "gpt-4.1-mini");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-secret");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-secret");
 
-    expect(getProductionHealth()).toEqual({
-      openaiConfigured: false,
-      supabaseConfigured: true,
-      appMode: "mock"
+    const health = getProductionHealth();
+
+    expect(health).toMatchObject({
+      openaiConfigured: true,
+      supabaseUrlConfigured: true,
+      supabaseAnonConfigured: true,
+      supabaseServiceConfigured: true,
+      appMode: "real",
+      openaiModel: "gpt-4.1-mini",
+      databaseMode: "supabase",
+      aiMode: "openai"
     });
+    expect(JSON.stringify(health)).not.toContain("service-secret");
+  });
+
+  it("falls back to mock app mode when all production integrations are missing", () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
+
+    expect(getProductionHealth()).toMatchObject({
+      openaiConfigured: false,
+      supabaseUrlConfigured: false,
+      supabaseAnonConfigured: false,
+      supabaseServiceConfigured: false,
+      appMode: "mock",
+      databaseMode: "memory",
+      aiMode: "fallback"
+    });
+  });
+
+  it("checks production construction readiness without exposing secrets or making writes", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-secret");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-secret");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-secret");
+
+    const response = await getProductionCheck();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      health: {
+        appMode: "real",
+        databaseMode: "supabase",
+        aiMode: "openai"
+      },
+      checks: {
+        env: {
+          openaiConfigured: true,
+          supabaseUrlConfigured: true,
+          supabaseAnonConfigured: true,
+          supabaseServiceConfigured: true
+        },
+        openaiClientConstructed: true,
+        supabaseAnonClientConstructed: true,
+        supabaseServiceClientConstructed: true
+      }
+    });
+    expect(payload.timestamp).toEqual(expect.any(String));
+    expect(JSON.stringify(payload)).not.toContain("sk-secret");
+    expect(JSON.stringify(payload)).not.toContain("anon-secret");
+    expect(JSON.stringify(payload)).not.toContain("service-secret");
   });
 
   it("returns a structured CEO plan response from /api/ceo-command", async () => {
