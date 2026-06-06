@@ -20,14 +20,14 @@ describe("production API readiness", () => {
     const health = getProductionHealth();
 
     expect(health).toMatchObject({
-      openaiConfigured: true,
-      supabaseUrlConfigured: true,
-      supabaseAnonConfigured: true,
-      supabaseServiceConfigured: false,
-      appMode: "partial",
-      openaiModel: "gpt-4.1",
+      openaiApiKeyPresent: true,
+      openaiApiKeyLength: 9,
+      supabaseUrlPresent: true,
+      supabaseAnonPresent: true,
+      appMode: "real",
       databaseMode: "supabase",
-      aiMode: "openai"
+      aiMode: "openai",
+      openaiModel: "gpt-4.1"
     });
     expect(health.timestamp).toEqual(expect.any(String));
     expect(JSON.stringify(health)).not.toContain("sk-secret");
@@ -44,14 +44,14 @@ describe("production API readiness", () => {
     const health = getProductionHealth();
 
     expect(health).toMatchObject({
-      openaiConfigured: true,
-      supabaseUrlConfigured: true,
-      supabaseAnonConfigured: true,
-      supabaseServiceConfigured: true,
+      openaiApiKeyPresent: true,
+      openaiApiKeyLength: 9,
+      supabaseUrlPresent: true,
+      supabaseAnonPresent: true,
       appMode: "real",
-      openaiModel: "gpt-4.1-mini",
       databaseMode: "supabase",
-      aiMode: "openai"
+      aiMode: "openai",
+      openaiModel: "gpt-4.1-mini"
     });
     expect(JSON.stringify(health)).not.toContain("service-secret");
   });
@@ -63,13 +63,32 @@ describe("production API readiness", () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
 
     expect(getProductionHealth()).toMatchObject({
-      openaiConfigured: false,
-      supabaseUrlConfigured: false,
-      supabaseAnonConfigured: false,
-      supabaseServiceConfigured: false,
+      openaiApiKeyPresent: false,
+      openaiApiKeyLength: 0,
+      supabaseUrlPresent: false,
+      supabaseAnonPresent: false,
       appMode: "mock",
       databaseMode: "memory",
-      aiMode: "fallback"
+      aiMode: "fallback",
+      openaiModel: "gpt-4.1"
+    });
+  });
+
+  it("does not treat the default OpenAI model as proof that secrets reached runtime", () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
+    vi.stubEnv("OPENAI_MODEL", "gpt-4.1");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
+
+    expect(getProductionHealth()).toMatchObject({
+      openaiApiKeyPresent: false,
+      openaiApiKeyLength: 0,
+      supabaseUrlPresent: false,
+      supabaseAnonPresent: false,
+      appMode: "mock",
+      databaseMode: "memory",
+      aiMode: "fallback",
+      openaiModel: "gpt-4.1"
     });
   });
 
@@ -92,10 +111,10 @@ describe("production API readiness", () => {
       },
       checks: {
         env: {
-          openaiConfigured: true,
-          supabaseUrlConfigured: true,
-          supabaseAnonConfigured: true,
-          supabaseServiceConfigured: true
+          openaiApiKeyPresent: true,
+          openaiApiKeyLength: 9,
+          supabaseUrlPresent: true,
+          supabaseAnonPresent: true
         },
         openaiClientConstructed: true,
         supabaseAnonClientConstructed: true,

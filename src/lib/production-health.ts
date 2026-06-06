@@ -1,39 +1,41 @@
 export type ProductionHealth = {
-  openaiConfigured: boolean;
-  supabaseUrlConfigured: boolean;
-  supabaseAnonConfigured: boolean;
-  supabaseServiceConfigured: boolean;
-  supabaseConfigured: boolean;
+  openaiApiKeyPresent: boolean;
+  openaiApiKeyLength: number;
+  supabaseUrlPresent: boolean;
+  supabaseAnonPresent: boolean;
   appMode: "real" | "partial" | "mock";
-  openaiModel: string;
   databaseMode: "supabase" | "memory";
   aiMode: "openai" | "fallback";
+  openaiModel: string;
   timestamp: string;
 };
 
 export function getProductionHealth(env: NodeJS.ProcessEnv = process.env): ProductionHealth {
-  const openaiConfigured = hasValue(env.OPENAI_API_KEY);
-  const supabaseUrlConfigured = hasValue(env.NEXT_PUBLIC_SUPABASE_URL);
-  const supabaseAnonConfigured = hasValue(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  const supabaseServiceConfigured = hasValue(env.SUPABASE_SERVICE_ROLE_KEY);
-  const supabaseConfigured = supabaseUrlConfigured && supabaseAnonConfigured;
-  const allUsedProductionIntegrationsConfigured = openaiConfigured && supabaseConfigured && supabaseServiceConfigured;
-  const anyProductionIntegrationConfigured = openaiConfigured || supabaseUrlConfigured || supabaseAnonConfigured || supabaseServiceConfigured;
+  const openaiApiKeyLength = valueLength(env.OPENAI_API_KEY);
+  const openaiApiKeyPresent = openaiApiKeyLength > 0;
+  const supabaseUrlPresent = hasValue(env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonPresent = hasValue(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const supabaseConfigured = supabaseUrlPresent && supabaseAnonPresent;
+  const allUsedProductionIntegrationsConfigured = openaiApiKeyPresent && supabaseConfigured;
+  const anyProductionIntegrationConfigured = openaiApiKeyPresent || supabaseUrlPresent || supabaseAnonPresent;
 
   return {
-    openaiConfigured,
-    supabaseUrlConfigured,
-    supabaseAnonConfigured,
-    supabaseServiceConfigured,
-    supabaseConfigured,
+    openaiApiKeyPresent,
+    openaiApiKeyLength,
+    supabaseUrlPresent,
+    supabaseAnonPresent,
     appMode: allUsedProductionIntegrationsConfigured ? "real" : anyProductionIntegrationConfigured ? "partial" : "mock",
-    openaiModel: env.OPENAI_MODEL?.trim() || "gpt-4.1",
     databaseMode: supabaseConfigured ? "supabase" : "memory",
-    aiMode: openaiConfigured ? "openai" : "fallback",
+    aiMode: openaiApiKeyPresent ? "openai" : "fallback",
+    openaiModel: env.OPENAI_MODEL?.trim() || "gpt-4.1",
     timestamp: new Date().toISOString()
   };
 }
 
 function hasValue(value: string | undefined) {
-  return Boolean(value?.trim());
+  return valueLength(value) > 0;
+}
+
+function valueLength(value: string | undefined) {
+  return value?.trim().length ?? 0;
 }

@@ -8,17 +8,17 @@ export async function GET() {
   const openaiClientConstructed = constructOpenAIClient();
   const supabaseAnonClientConstructed = constructSupabaseAnonClient();
   const supabaseServiceClientConstructed = constructSupabaseServiceClient();
-  const ok = openaiClientConstructed && supabaseAnonClientConstructed && supabaseServiceClientConstructed;
+  const ok = openaiClientConstructed && supabaseAnonClientConstructed;
 
   return NextResponse.json({
     ok,
     health,
     checks: {
       env: {
-        openaiConfigured: health.openaiConfigured,
-        supabaseUrlConfigured: health.supabaseUrlConfigured,
-        supabaseAnonConfigured: health.supabaseAnonConfigured,
-        supabaseServiceConfigured: health.supabaseServiceConfigured
+        openaiApiKeyPresent: health.openaiApiKeyPresent,
+        openaiApiKeyLength: health.openaiApiKeyLength,
+        supabaseUrlPresent: health.supabaseUrlPresent,
+        supabaseAnonPresent: health.supabaseAnonPresent
       },
       openaiClientConstructed,
       supabaseAnonClientConstructed,
