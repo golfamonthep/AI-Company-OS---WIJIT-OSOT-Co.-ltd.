@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2, Users, Download, Trash2, Plus, Zap, TrendingDown } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2, Users, Download, Trash2, Plus, Zap, TrendingDown, Mail, Target } from "lucide-react";
 
 
 /**
@@ -100,6 +100,13 @@ interface PerformanceData {
   conversions: number;
 }
 
+interface CompetitorData {
+  name: string;
+  cpc: number;
+  ctr: number;
+  roas: number;
+}
+
 export default function Home() {
   const [metrics, setMetrics] = useState<AdMetrics>({
     budget: 0,
@@ -159,6 +166,16 @@ export default function Home() {
     { date: "Day 6", roas: 3.0, ctr: 2.4, cpc: 8.5, conversions: 13 },
     { date: "Day 7", roas: 3.2, ctr: 2.5, cpc: 8, conversions: 15 }
   ]);
+
+  const [emailAddress, setEmailAddress] = useState("");
+  const [competitors, setCompetitors] = useState<CompetitorData[]>([]);
+  const [newCompetitor, setNewCompetitor] = useState<CompetitorData>({
+    name: "",
+    cpc: 0,
+    ctr: 0,
+    roas: 0
+  });
+  const [benchmarkResult, setBenchmarkResult] = useState<any>(null);
 
   // Load history from localStorage
   useEffect(() => {
@@ -463,6 +480,61 @@ export default function Home() {
 
   const removeAudience = (index: number) => {
     setAudiences(audiences.filter((_, i) => i !== index));
+  };
+
+  const addCompetitor = () => {
+    if (!newCompetitor.name || newCompetitor.cpc === 0) {
+      alert("กรุณากรอกชื่อและข้อมูล CPC ของคู่แข่ง");
+      return;
+    }
+    setCompetitors([...competitors, newCompetitor]);
+    setNewCompetitor({
+      name: "",
+      cpc: 0,
+      ctr: 0,
+      roas: 0
+    });
+  };
+
+  const removeCompetitor = (index: number) => {
+    setCompetitors(competitors.filter((_, i) => i !== index));
+  };
+
+  const benchmarkCompetitors = () => {
+    if (competitors.length === 0) {
+      alert("กรุณาเพิ่มคู่แข่งอย่างน้อย 1 รายการ");
+      return;
+    }
+
+    const myAvgCPC = performanceData.reduce((a, b) => a + b.cpc, 0) / performanceData.length;
+    const myAvgCTR = performanceData.reduce((a, b) => a + b.ctr, 0) / performanceData.length;
+    const myAvgROAS = performanceData.reduce((a, b) => a + b.roas, 0) / performanceData.length;
+
+    const benchmarks = competitors.map(comp => ({
+      name: comp.name,
+      cpcDiff: ((comp.cpc - myAvgCPC) / myAvgCPC * 100).toFixed(1),
+      ctrDiff: ((comp.ctr - myAvgCTR) / myAvgCTR * 100).toFixed(1),
+      roasDiff: ((comp.roas - myAvgROAS) / myAvgROAS * 100).toFixed(1),
+      cpcStatus: comp.cpc < myAvgCPC ? "ต่ำกว่า" : comp.cpc > myAvgCPC ? "สูงกว่า" : "เท่ากัน",
+      ctrStatus: comp.ctr > myAvgCTR ? "สูงกว่า" : comp.ctr < myAvgCTR ? "ต่ำกว่า" : "เท่ากัน",
+      roasStatus: comp.roas > myAvgROAS ? "สูงกว่า" : comp.roas < myAvgROAS ? "ต่ำกว่า" : "เท่ากัน"
+    }));
+
+    setBenchmarkResult({
+      myAvgCPC: Math.round(myAvgCPC * 100) / 100,
+      myAvgCTR: Math.round(myAvgCTR * 100) / 100,
+      myAvgROAS: Math.round(myAvgROAS * 100) / 100,
+      benchmarks
+    });
+    setActiveTab("benchmark-result");
+  };
+
+  const exportReport = () => {
+    if (!emailAddress) {
+      alert("กรุณากรอกอีเมล");
+      return;
+    }
+    alert(`รายงานจะถูกส่งไปยัง ${emailAddress} (ในระบบจริง จะส่งผ่าน Email Service)`);
   };
 
   const analyzeABTest = () => {
@@ -845,6 +917,20 @@ export default function Home() {
                   >
                     <BarChart3 className="w-5 h-5 mr-2" />
                     📈 Dashboard
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("email")}
+                    className="flex-1 min-w-max bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3"
+                  >
+                    <Mail className="w-5 h-5 mr-2" />
+                    📧 Email Report
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("competitor")}
+                    className="flex-1 min-w-max bg-red-600 hover:bg-red-700 text-white font-semibold py-3"
+                  >
+                    <Target className="w-5 h-5 mr-2" />
+                    🎯 Competitor
                   </Button>
                   <Button 
                     onClick={() => setActiveTab("input")}
@@ -1648,6 +1734,189 @@ export default function Home() {
                   </div>
                 </div>
               </Card>
+
+              <div className="flex gap-4">
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Report Tab */}
+          <div className={activeTab === "email" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-lg mb-2">📧 Email Report Export</p>
+                    <h2 className="text-3xl font-bold">ส่งรายงานการวิเคราะห์ไปยังอีเมล</h2>
+                  </div>
+                  <Mail className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-amber-900 mb-6">ป้อนอีเมลเพื่อรับรายงาน</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="font-semibold mb-2 block">อีเมล</Label>
+                    <Input type="email" placeholder="your@email.com" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-amber-900 mb-4">📋 สิ่งที่จะรวมในรายงาน</h3>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li>✅ สรุปประสิทธิภาพโฆษณา (ROAS, CTR, CPC, Conversion Rate)</li>
+                  <li>✅ Business Health Check (Audience, Promotion, Creative, System)</li>
+                  <li>✅ Lookalike Audience Recommendations</li>
+                  <li>✅ A/B Testing Results</li>
+                  <li>✅ Budget Optimization Suggestions</li>
+                  <li>✅ Performance Trends (7 วัน)</li>
+                </ul>
+              </Card>
+
+              <Button onClick={exportReport} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3">
+                <Mail className="w-5 h-5 mr-2" />
+                ส่งรายงานไปยังอีเมล
+              </Button>
+
+              <div className="flex gap-4">
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Competitor Benchmarking Tab */}
+          <div className={activeTab === "competitor" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-red-600 to-rose-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-red-100 text-lg mb-2">🎯 Competitor Benchmarking</p>
+                    <h2 className="text-3xl font-bold">เปรียบเทียบกับคู่แข่ง</h2>
+                  </div>
+                  <Target className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-red-900 mb-6">เพิ่มข้อมูลคู่แข่ง</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="font-semibold mb-2 block">ชื่อคู่แข่ง</Label>
+                    <Input placeholder="เช่น Competitor A" value={newCompetitor.name} onChange={(e) => setNewCompetitor({...newCompetitor, name: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="font-semibold mb-2 block">CPC (฿)</Label>
+                      <Input type="number" placeholder="10" value={newCompetitor.cpc || ""} onChange={(e) => setNewCompetitor({...newCompetitor, cpc: parseFloat(e.target.value) || 0})} />
+                    </div>
+                    <div>
+                      <Label className="font-semibold mb-2 block">CTR (%)</Label>
+                      <Input type="number" placeholder="2.5" value={newCompetitor.ctr || ""} onChange={(e) => setNewCompetitor({...newCompetitor, ctr: parseFloat(e.target.value) || 0})} />
+                    </div>
+                    <div>
+                      <Label className="font-semibold mb-2 block">ROAS</Label>
+                      <Input type="number" placeholder="2.5" value={newCompetitor.roas || ""} onChange={(e) => setNewCompetitor({...newCompetitor, roas: parseFloat(e.target.value) || 0})} />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Button onClick={addCompetitor} className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3">
+                <Plus className="w-5 h-5 mr-2" />
+                เพิ่มคู่แข่ง
+              </Button>
+
+              {competitors.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-red-900">Competitors ({competitors.length})</h3>
+                  {competitors.map((comp, idx) => (
+                    <Card key={idx} className="p-6 border-0 shadow-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-red-900 mb-3">{comp.name}</h4>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground">CPC</p>
+                              <p className="font-semibold">฿{comp.cpc}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">CTR</p>
+                              <p className="font-semibold">{comp.ctr}%</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">ROAS</p>
+                              <p className="font-semibold">{comp.roas}x</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button onClick={() => removeCompetitor(idx)} variant="outline" className="text-red-600 hover:text-red-700">
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <Button onClick={benchmarkCompetitors} className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                เปรียบเทียบกับคู่แข่ง
+              </Button>
+
+              {benchmarkResult && activeTab === "benchmark-result" && (
+                <div className="space-y-4">
+                  <Card className="p-6 border-0 shadow-lg bg-red-50">
+                    <h3 className="text-xl font-bold text-red-900 mb-4">📊 ผลการเปรียบเทียบ</h3>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div>
+                        <p className="text-xs text-muted-foreground">CPC ของคุณ</p>
+                        <p className="font-bold text-red-900 text-lg">฿{benchmarkResult.myAvgCPC}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">CTR ของคุณ</p>
+                        <p className="font-bold text-red-900 text-lg">{benchmarkResult.myAvgCTR}%</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">ROAS ของคุณ</p>
+                        <p className="font-bold text-red-900 text-lg">{benchmarkResult.myAvgROAS}x</p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {benchmarkResult.benchmarks.map((bench: any, idx: number) => (
+                    <Card key={idx} className="p-6 border-0 shadow-lg">
+                      <h4 className="font-bold text-red-900 mb-4">{bench.name}</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">CPC</p>
+                          <p className={`font-semibold ${bench.cpcStatus === "ต่ำกว่า" ? "text-green-600" : bench.cpcStatus === "สูงกว่า" ? "text-red-600" : "text-gray-600"}`}>
+                            {bench.cpcStatus} {bench.cpcDiff}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">CTR</p>
+                          <p className={`font-semibold ${bench.ctrStatus === "สูงกว่า" ? "text-green-600" : bench.ctrStatus === "ต่ำกว่า" ? "text-red-600" : "text-gray-600"}`}>
+                            {bench.ctrStatus} {bench.ctrDiff}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">ROAS</p>
+                          <p className={`font-semibold ${bench.roasStatus === "สูงกว่า" ? "text-green-600" : bench.roasStatus === "ต่ำกว่า" ? "text-red-600" : "text-gray-600"}`}>
+                            {bench.roasStatus} {bench.roasDiff}%
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
