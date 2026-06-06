@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
+import { storagePut } from "./storage";
 import {
   createProduct,
   deleteProduct,
@@ -72,6 +73,27 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await deleteProduct(input.id);
         return { success: true } as const;
+      }),
+  }),
+
+  upload: router({
+    /**
+     * Upload a product image (base64-encoded) and return the storage URL.
+     * Admin only.
+     */
+    productImage: adminProcedure
+      .input(
+        z.object({
+          filename: z.string().min(1),
+          contentType: z.string().min(1),
+          base64: z.string().min(1),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.base64, "base64");
+        const key = `products/${Date.now()}-${input.filename}`;
+        const { url } = await storagePut(key, buffer, input.contentType);
+        return { url };
       }),
   }),
 
