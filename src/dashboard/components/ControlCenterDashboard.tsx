@@ -36,6 +36,9 @@ const systemStatus = [
   { label: "Notification", status: "ออนไลน์" }
 ];
 
+const glassPanelClass = "relative overflow-hidden rounded-[24px] border border-cyan-300/10 bg-white/[0.055] shadow-2xl shadow-black/25 ring-1 ring-white/5 backdrop-blur-xl";
+const glassCardClass = "rounded-[22px] border border-white/10 bg-black/[0.24] shadow-lg shadow-black/15 ring-1 ring-white/5";
+
 export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?: DashboardWorkspaceSession }) {
   const [liveSnapshot, setLiveSnapshot] = useState<LiveDashboardSnapshot | null>(null);
   const [snapshotStatus, setSnapshotStatus] = useState<"loading" | "ready" | "fallback">("loading");
@@ -104,7 +107,7 @@ export function ControlCenterDashboard({ workspaceSession }: { workspaceSession?
 
   return (
     <DashboardLayoutSystem workspaceSession={workspaceSession}>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <CeoCommandComposer viewModel={displayedViewModel} snapshotError={snapshotError} lastUpdatedAt={lastUpdatedAt} refreshing={refreshing} onRefresh={refreshLiveSnapshot} onPlanGenerated={setCommandPlanPreview} />
         <PlatformAgentStrip agents={platformModel.platformAgents} commandPlanPreview={commandPlanPreview} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -170,18 +173,21 @@ function CeoCommandComposer({
   }
 
   return (
-    <section id="ceo-command" className="overflow-hidden rounded-[28px] border border-blue-300/20 bg-white/[0.08] shadow-2xl shadow-blue-950/30 ring-1 ring-white/10 backdrop-blur-xl">
+    <section id="ceo-command" className="relative overflow-hidden rounded-[26px] border border-cyan-300/15 bg-[linear-gradient(135deg,rgba(14,165,233,0.10),rgba(15,23,42,0.72)_42%,rgba(88,28,135,0.14))] shadow-2xl shadow-cyan-950/25 ring-1 ring-white/10 backdrop-blur-2xl">
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
+      <div className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 left-24 size-72 rounded-full bg-violet-500/10 blur-3xl" />
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <form onSubmit={askCeoAi} className="p-5 sm:p-7">
+        <form onSubmit={askCeoAi} className="relative p-5 sm:p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  <span className="size-2 rounded-full bg-emerald-300" />
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200 shadow-lg shadow-emerald-950/20">
+                  <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.85)]" />
                   พร้อมรับคำสั่ง
                 </span>
                 {viewModel.systemBadges.slice(0, 2).map((badge) => (
-                  <span key={badge} className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-medium text-slate-300">
+                  <span key={badge} className="rounded-full border border-cyan-300/10 bg-white/[0.07] px-3 py-1 text-xs font-medium text-slate-300">
                     {badge}
                   </span>
                 ))}
@@ -202,10 +208,10 @@ function CeoCommandComposer({
             onChange={(event) => setCommand(event.target.value)}
             rows={5}
             placeholder="พิมพ์สิ่งที่คุณต้องการให้ CEO AI ช่วยบริหารงาน เช่น วิเคราะห์ยอดขายเดือนนี้, วางแผนเปิดตัวสินค้าใหม่, หรืออัปโหลดไฟล์เพื่อให้ CEO AI สรุปรายงาน"
-            className="min-h-40 w-full resize-none rounded-3xl border border-blue-200/20 bg-[#0c1328]/90 px-5 py-4 text-base leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/60 focus:ring-4 focus:ring-blue-400/15"
+            className="min-h-36 w-full resize-none rounded-[24px] border border-cyan-200/20 bg-[#071125]/92 px-5 py-4 text-base leading-7 text-white shadow-inner shadow-black/30 outline-none transition placeholder:text-slate-500 focus:border-cyan-300/60 focus:ring-4 focus:ring-cyan-400/15"
           />
 
-          <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.05] p-3">
+          <div className="mt-4 rounded-[22px] border border-cyan-300/10 bg-white/[0.045] p-3 shadow-inner shadow-black/20">
             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-white">แนบข้อมูลให้ CEO AI วิเคราะห์</p>
               <p className="text-xs text-slate-400">รองรับไฟล์ เอกสาร รูปภาพ และรายงาน</p>
@@ -230,7 +236,7 @@ function CeoCommandComposer({
           {attachedFiles.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {attachedFiles.map((file) => (
-                <span key={file} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs text-slate-300">
+                <span key={file} className="inline-flex items-center gap-2 rounded-full border border-cyan-300/10 bg-white/[0.07] px-3 py-1 text-xs text-slate-300">
                   <Paperclip size={13} />
                   {file}
                 </span>
@@ -240,7 +246,7 @@ function CeoCommandComposer({
 
           <div className="mt-4 flex flex-wrap gap-2">
             {quickPrompts.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => setCommand(prompt)} className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-blue-300/35 hover:bg-blue-400/10 hover:text-white">
+              <button key={prompt} type="button" onClick={() => setCommand(prompt)} className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-300/35 hover:bg-cyan-400/10 hover:text-white">
                 {prompt}
               </button>
             ))}
@@ -248,19 +254,19 @@ function CeoCommandComposer({
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-5 text-slate-400">AI จะแนะนำแผนให้คุณตรวจก่อนเสมอ — คุณอนุมัติแล้วจึงดำเนินการ</p>
-            <button type="submit" disabled={commandStatus === "sending" || command.trim().length === 0} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="submit" disabled={commandStatus === "sending" || command.trim().length === 0} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-400/25 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60">
               {commandStatus === "sending" ? "CEO AI กำลังวิเคราะห์" : "ส่งคำสั่ง"}
               <SendHorizontal size={16} />
             </button>
           </div>
         </form>
 
-        <div className="border-t border-white/10 bg-black/20 p-5 sm:p-7 xl:border-l xl:border-t-0">
-          <div className="rounded-3xl border border-white/10 bg-white/8 p-5">
+        <div className="relative border-t border-cyan-300/10 bg-black/20 p-5 sm:p-6 xl:border-l xl:border-t-0">
+          <div className="rounded-[24px] border border-cyan-300/10 bg-white/[0.07] p-5 shadow-xl shadow-black/20 ring-1 ring-white/5">
             <p className="text-xs font-semibold text-blue-200">{reply ? "ข้อเสนอจาก CEO AI" : "CEO AI พร้อมเริ่มงาน"}</p>
             <h3 className="mt-2 text-xl font-semibold text-white">{viewModel.headline}</h3>
             <p className={commandError ? "mt-3 text-sm leading-6 text-rose-200" : "mt-3 text-sm leading-6 text-slate-300"}>{commandError ?? reply ?? "เริ่มจากพิมพ์คำสั่งหรืออัปโหลดไฟล์ แล้ว CEO AI จะสรุปแผน สิ่งที่ต้องอนุมัติ และผลลัพธ์ที่คาดว่าจะได้รับ"}</p>
-            <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4">
+            <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 shadow-lg shadow-amber-950/10">
               <div className="flex items-center gap-2 text-sm font-semibold text-amber-100">
                 <ShieldCheck size={16} />
                 Approval-first
@@ -280,7 +286,7 @@ function CeoCommandComposer({
 
 function CommandToolButton({ children, icon, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: React.ReactNode }) {
   return (
-    <button {...props} className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-300/35 hover:bg-white/12">
+    <button {...props} className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-cyan-300/10 bg-white/[0.065] px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-cyan-300/35 hover:bg-cyan-400/10">
       {icon}
       {children}
     </button>
@@ -291,16 +297,18 @@ function PlatformAgentStrip({ agents, commandPlanPreview }: { agents: PlatformAg
   const involvedPlatformText = commandPlanPreview?.planPanel.items.find((item) => item.step === "แพลตฟอร์มที่เกี่ยวข้อง")?.detail ?? "";
 
   return (
-    <section id="platform-offices" className="rounded-[28px] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 sm:p-6">
+    <section id="platform-offices" className={`${glassPanelClass} p-4 sm:p-5`}>
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/55 to-transparent" />
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <SectionTitle icon={<BriefcaseBusiness size={18} />} title="Platform Agent Offices" description="CEO AI เลือกทีมแพลตฟอร์มที่เกี่ยวข้อง แล้วแตกงานให้แต่ละ office รอคุณตรวจ" />
-        <span className="w-fit rounded-full border border-blue-300/25 bg-blue-400/10 px-3 py-1 text-xs font-semibold text-blue-100">7 platform offices</span>
+        <span className="w-fit rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 shadow-lg shadow-cyan-950/20">7 platform offices</span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {agents.map((agent) => {
           const highlighted = involvedPlatformText.includes(agent.name);
           return (
-            <article key={agent.id} className={`min-w-[245px] rounded-3xl border p-4 transition ${highlighted ? "border-cyan-200/50 bg-cyan-400/12 shadow-lg shadow-cyan-950/30" : "border-white/10 bg-black/18"}`}>
+            <article key={agent.id} className={`relative min-w-[230px] overflow-hidden rounded-[22px] border p-4 transition hover:-translate-y-0.5 ${highlighted ? "border-cyan-200/55 bg-cyan-400/12 shadow-[0_0_34px_rgba(34,211,238,0.18)]" : "border-white/10 bg-black/[0.24] shadow-lg shadow-black/15"}`}>
+              <div className={`pointer-events-none absolute inset-x-0 top-0 h-px ${accentClass(agent.accent, "line")}`} />
               <div className="flex items-start justify-between gap-3">
                 <div className={`grid size-11 place-items-center rounded-2xl ${accentClass(agent.accent, "icon")}`}>
                   {platformIcon(agent.id)}
@@ -325,23 +333,25 @@ function PlatformAgentStrip({ agents, commandPlanPreview }: { agents: PlatformAg
 function SystemMapSection({ agents, workflows }: { agents: PlatformAgent[]; workflows: PlatformWorkflow[] }) {
   const cityNodes = agents.slice(0, 7);
   return (
-    <section id="system-map" className="overflow-hidden rounded-[28px] border border-blue-300/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.72),rgba(2,6,23,0.94)),radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.22),transparent_34%)] p-5 shadow-2xl shadow-black/25 sm:p-6">
+    <section id="system-map" className="relative overflow-hidden rounded-[24px] border border-cyan-300/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.70),rgba(2,6,23,0.96)),radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.20),transparent_34%),radial-gradient(circle_at_82%_88%,rgba(16,185,129,0.10),transparent_26%)] p-5 shadow-2xl shadow-cyan-950/20 ring-1 ring-white/5 backdrop-blur-xl sm:p-6">
+      <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionTitle icon={<Database size={18} />} title="System Map / Platform City" description="แผนที่ระบบแบบ UI-first: CEO AI อยู่ศูนย์กลาง เชื่อมงานไปยังแต่ละ platform office" />
         <p className="text-xs text-slate-500">CSS map panel · no 3D required</p>
       </div>
-      <div className="relative mt-6 min-h-[430px] overflow-hidden rounded-[24px] border border-white/10 bg-[#071023]/88 p-5">
+      <div className="relative mt-5 min-h-[410px] overflow-hidden rounded-[22px] border border-cyan-300/10 bg-[#050d1e]/88 p-5 shadow-inner shadow-black/40">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(rgba(34,211,238,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
         <div className="absolute inset-x-8 top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-300/35 to-transparent" />
         <div className="absolute left-1/2 top-10 h-[72%] w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-blue-300/25 to-transparent" />
-        <div className="absolute left-1/2 top-1/2 z-20 w-52 -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-blue-200/30 bg-blue-500/20 p-5 text-center shadow-2xl shadow-blue-950/40">
-          <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-blue-500 text-white">
+        <div className="absolute left-1/2 top-1/2 z-20 w-52 -translate-x-1/2 -translate-y-1/2 rounded-[24px] border border-cyan-200/30 bg-cyan-400/12 p-5 text-center shadow-[0_0_42px_rgba(34,211,238,0.18)]">
+          <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-cyan-400 text-slate-950 shadow-[0_0_32px_rgba(34,211,238,0.28)]">
             <Bot size={30} />
           </div>
           <p className="mt-4 text-sm font-semibold text-white">CEO AI Core</p>
           <p className="mt-1 text-xs leading-5 text-blue-100/80">Command · Plan · Approval</p>
         </div>
         {cityNodes.map((agent, index) => (
-          <div key={agent.id} className={`absolute z-10 w-40 rounded-3xl border border-white/10 bg-white/[0.08] p-3 shadow-xl shadow-black/25 ${systemMapPosition(index)}`}>
+          <div key={agent.id} className={`absolute z-10 w-40 rounded-[20px] border border-white/10 bg-black/[0.35] p-3 shadow-xl shadow-black/25 ring-1 ring-white/5 backdrop-blur-md ${systemMapPosition(index)}`}>
             <div className="flex items-center gap-2">
               <div className={`grid size-9 place-items-center rounded-2xl ${accentClass(agent.accent, "icon")}`}>{platformIcon(agent.id, 16)}</div>
               <div className="min-w-0">
@@ -353,13 +363,13 @@ function SystemMapSection({ agents, workflows }: { agents: PlatformAgent[]; work
         ))}
         <div className="absolute bottom-4 left-4 right-4 grid gap-2 md:grid-cols-2">
           {workflows.slice(0, 2).map((workflow) => (
-            <div key={workflow.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+            <div key={workflow.id} className="rounded-2xl border border-cyan-300/10 bg-black/[0.35] px-3 py-2 shadow-lg shadow-black/20 backdrop-blur-md">
               <div className="flex items-center justify-between gap-3">
                 <p className="truncate text-xs font-semibold text-white">{workflow.title}</p>
                 <span className="text-xs text-cyan-200">{workflow.progress}%</span>
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-cyan-300" style={{ width: `${workflow.progress}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 shadow-[0_0_16px_rgba(34,211,238,0.35)]" style={{ width: `${workflow.progress}%` }} />
               </div>
             </div>
           ))}
@@ -371,11 +381,11 @@ function SystemMapSection({ agents, workflows }: { agents: PlatformAgent[]; work
 
 function PerformanceSummary({ metrics }: { metrics: ReturnType<typeof createMultiPlatformCommandCenterModel>["metrics"] }) {
   return (
-    <section id="performance-summary" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+    <section id="performance-summary" className={`${glassPanelClass} p-4 sm:p-5`}>
       <SectionTitle icon={<TrendingUp size={18} />} title="Performance Summary" description="ภาพรวมที่ CEO AI ใช้จัดลำดับความสำคัญข้ามแพลตฟอร์ม" />
       <div className="mt-5 space-y-3">
         {metrics.map((metric) => (
-          <article key={metric.id} className="rounded-3xl border border-white/10 bg-black/20 p-4">
+          <article key={metric.id} className={`${glassCardClass} p-4`}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-slate-400">{metric.label}</p>
@@ -392,21 +402,21 @@ function PerformanceSummary({ metrics }: { metrics: ReturnType<typeof createMult
 
 function OperationRoom({ workflows }: { workflows: PlatformWorkflow[] }) {
   return (
-    <section id="operation-room" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+    <section id="operation-room" className={`${glassPanelClass} p-4 sm:p-5`}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <SectionTitle icon={<ClipboardCheck size={18} />} title="Operation Room" description="ห้องทำงานรวมที่แสดง workflow ข้ามแพลตฟอร์ม และจุดที่ต้องให้เจ้าของธุรกิจตัดสินใจ" />
-        <span className="w-fit rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-100">Approval-gated operations</span>
+        <span className="w-fit rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-100 shadow-lg shadow-amber-950/10">Approval-gated operations</span>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {workflows.map((workflow) => (
-          <article key={workflow.id} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+          <article key={workflow.id} className={`${glassCardClass} p-4`}>
             <div className="flex items-start justify-between gap-3">
               <h3 className="text-sm font-semibold leading-6 text-white">{workflow.title}</h3>
               {workflow.approvalRequired ? <ShieldCheck className="shrink-0 text-amber-200" size={16} /> : <CheckCircle2 className="shrink-0 text-emerald-200" size={16} />}
             </div>
             <p className="mt-2 min-h-10 text-xs leading-5 text-slate-400">{workflow.currentStep}</p>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-blue-400" style={{ width: `${workflow.progress}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-300 shadow-[0_0_14px_rgba(34,211,238,0.25)]" style={{ width: `${workflow.progress}%` }} />
             </div>
             <p className="mt-2 text-xs text-slate-500">{workflow.platformIds.length} platform offices involved</p>
           </article>
@@ -418,12 +428,12 @@ function OperationRoom({ workflows }: { workflows: PlatformWorkflow[] }) {
 
 function WorkflowTimeline({ workflows }: { workflows: PlatformWorkflow[] }) {
   return (
-    <section id="workflow-steps" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+    <section id="workflow-steps" className={`${glassPanelClass} p-4 sm:p-5`}>
       <SectionTitle icon={<BarChart3 size={18} />} title="Workflow Timeline" description="ลำดับงานจากคำสั่ง CEO AI ไปจนถึงผลลัพธ์ที่ต้องตรวจ" />
       <div className="mt-5 grid gap-3 lg:grid-cols-4">
         {workflows.map((workflow, index) => (
-          <article key={workflow.id} className="relative rounded-3xl border border-white/10 bg-black/18 p-4">
-            <div className="grid size-9 place-items-center rounded-2xl bg-blue-500 text-sm font-semibold text-white">{index + 1}</div>
+          <article key={workflow.id} className={`${glassCardClass} relative p-4`}>
+            <div className="grid size-9 place-items-center rounded-2xl bg-cyan-400 text-sm font-semibold text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.25)]">{index + 1}</div>
             <h3 className="mt-4 text-sm font-semibold leading-6 text-white">{workflow.title}</h3>
             <p className="mt-2 text-xs leading-5 text-slate-400">{workflow.currentStep}</p>
             {workflow.approvalRequired ? <p className="mt-3 text-xs font-semibold text-amber-200">รอการตรวจอนุมัติ</p> : <p className="mt-3 text-xs font-semibold text-emerald-200">ทำต่อได้ภายในระบบ</p>}
@@ -436,13 +446,13 @@ function WorkflowTimeline({ workflows }: { workflows: PlatformWorkflow[] }) {
 
 function ActivePlatformTasks({ tasks, agents }: { tasks: PlatformTask[]; agents: PlatformAgent[] }) {
   return (
-    <section id="active-work" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+    <section id="active-work" className={`${glassPanelClass} p-4 sm:p-5`}>
       <SectionTitle icon={<BriefcaseBusiness size={18} />} title="Active Platform Tasks" description="งานที่ CEO AI แยกให้แต่ละ platform office เตรียมไว้" />
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         {tasks.map((task) => {
           const agent = agents.find((item) => item.id === task.platformId);
           return (
-            <article key={task.id} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+            <article key={task.id} className={`${glassCardClass} p-4`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold leading-6 text-white">{task.title}</p>
@@ -451,7 +461,7 @@ function ActivePlatformTasks({ tasks, agents }: { tasks: PlatformTask[]; agents:
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${agent ? accentClass(agent.accent, "badge") : "bg-white/10 text-slate-300"}`}>{task.progress}%</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-cyan-300" style={{ width: `${task.progress}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 shadow-[0_0_14px_rgba(34,211,238,0.28)]" style={{ width: `${task.progress}%` }} />
               </div>
             </article>
           );
@@ -463,20 +473,20 @@ function ActivePlatformTasks({ tasks, agents }: { tasks: PlatformTask[]; agents:
 
 function LatestPlatformOutputs({ outputs, agents }: { outputs: PlatformOutput[]; agents: PlatformAgent[] }) {
   return (
-    <section id="final-outputs" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5 sm:p-6">
+    <section id="final-outputs" className={`${glassPanelClass} p-4 sm:p-5`}>
       <SectionTitle icon={<CheckCircle2 size={18} />} title="Latest Outputs" description="ผลลัพธ์ล่าสุดจาก platform offices ที่รอเปิดดู ขอแก้ หรืออนุมัติ" />
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {outputs.map((output) => {
           const agent = agents.find((item) => item.id === output.platformId);
           return (
-            <article key={output.id} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+            <article key={output.id} className={`${glassCardClass} p-4`}>
               <div className={`grid aspect-video place-items-center rounded-2xl border border-white/10 ${agent ? accentClass(agent.accent, "soft") : "bg-white/8 text-slate-300"}`}>
                 {platformIcon(output.platformId, 28)}
               </div>
               <p className="mt-4 text-sm font-semibold leading-6 text-white">{output.title}</p>
               <p className="mt-1 text-xs text-slate-400">{output.type} · {agent?.name ?? output.platformId}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" className="rounded-2xl bg-blue-500 px-3 py-2 text-xs font-semibold text-white">ดูผลลัพธ์</button>
+                <button type="button" className="rounded-2xl bg-cyan-400 px-3 py-2 text-xs font-semibold text-slate-950">ดูผลลัพธ์</button>
                 <button type="button" className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-slate-200">ขอแก้ไข</button>
               </div>
             </article>
@@ -489,19 +499,19 @@ function LatestPlatformOutputs({ outputs, agents }: { outputs: PlatformOutput[];
 
 function PlanReviewPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   return (
-    <section id="ceo-plan" className="rounded-[28px] border border-blue-300/20 bg-blue-400/[0.07] p-5 sm:p-6">
+    <section id="ceo-plan" className={`${glassPanelClass} border-blue-300/20 bg-blue-400/[0.07] p-4 sm:p-5`}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <SectionTitle icon={<ClipboardCheck size={18} />} title="แผนที่ CEO AI เสนอให้ตรวจ" description={viewModel.planPanel.summary} />
         <div className="flex flex-wrap gap-2">
-          <a href="#approval-queue" className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-400">ไปตรวจอนุมัติ</a>
+          <a href="#approval-queue" className="rounded-2xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/20 transition hover:bg-cyan-300">ไปตรวจอนุมัติ</a>
           <button type="button" className="rounded-2xl border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/12">เพิ่มเงื่อนไข</button>
         </div>
       </div>
       <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
         {viewModel.planPanel.items.slice(0, 4).map((item, index) => (
-          <article key={`${item.owner}-${item.step}-${index}`} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+          <article key={`${item.owner}-${item.step}-${index}`} className={`${glassCardClass} p-4`}>
             <div className="flex items-center justify-between gap-3">
-              <span className="grid size-8 shrink-0 place-items-center rounded-2xl bg-blue-500 text-sm font-semibold text-white">{index + 1}</span>
+              <span className="grid size-8 shrink-0 place-items-center rounded-2xl bg-cyan-400 text-sm font-semibold text-slate-950">{index + 1}</span>
               <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-blue-100">{item.status}</span>
             </div>
             <h3 className="mt-4 text-sm font-semibold leading-6 text-white">{item.step}</h3>
@@ -534,14 +544,14 @@ function ApprovalQueue({
       ];
 
   return (
-    <section id="approval-queue" className="rounded-[28px] border border-amber-300/20 bg-amber-400/[0.07] p-5 sm:p-6">
+    <section id="approval-queue" className={`${glassPanelClass} border-amber-300/20 bg-amber-400/[0.06] p-4 sm:p-5`}>
       <SectionTitle icon={<ShieldCheck size={18} />} title="รอการอนุมัติ" description="AI จะไม่ดำเนินการภายนอกจนกว่าคุณจะอนุมัติ" />
       <div className="mt-5 space-y-3">
         {items.map((item, index) => {
           const id = `${item.requester}-${item.title}`;
           const approved = approvalState[id] === "approved";
           return (
-            <article key={id} className="rounded-3xl border border-white/10 bg-black/20 p-4">
+            <article key={id} className={`${glassCardClass} border-amber-300/10 p-4`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-white">{item.title}</h3>
@@ -551,7 +561,7 @@ function ApprovalQueue({
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <a href="/workflows/content-department" className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/12">ดูรายละเอียด</a>
-                <button type="button" onClick={() => { onApprove(id); if (index === 0) onApprovalDecision?.("approve"); }} className="rounded-2xl bg-emerald-500 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-400" disabled={approved}>
+                <button type="button" onClick={() => { onApprove(id); if (index === 0) onApprovalDecision?.("approve"); }} className="rounded-2xl bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-950/20 hover:bg-emerald-300" disabled={approved}>
                   อนุมัติ
                 </button>
               </div>
@@ -565,11 +575,11 @@ function ApprovalQueue({
 
 function CompanyMemoryPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   return (
-    <section id="company-memory" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5">
+    <section id="company-memory" className={`${glassPanelClass} p-4`}>
       <SectionTitle icon={<BrainCircuit size={18} />} title="ความจำองค์กร" description={viewModel.memoryPanel.summary} />
       <div className="mt-4 space-y-3">
         {viewModel.memoryPanel.items.slice(0, 3).map((item, index) => (
-          <article key={`${item.title}-${index}`} className="rounded-3xl border border-white/10 bg-black/18 p-4">
+          <article key={`${item.title}-${index}`} className={`${glassCardClass} p-4`}>
             <p className="text-sm font-semibold text-white">{item.title}</p>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{item.detail}</p>
           </article>
@@ -581,11 +591,11 @@ function CompanyMemoryPanel({ viewModel }: { viewModel: CeoCommandCenterViewMode
 
 function SystemStatusPanel() {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5">
+    <section className={`${glassPanelClass} p-4`}>
       <SectionTitle icon={<Database size={18} />} title="สถานะระบบ" description="บริการหลักพร้อมช่วย CEO AI ทำงาน" />
       <div className="mt-4 space-y-3">
         {systemStatus.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 py-2">
+          <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/[0.24] px-3 py-2">
             <span className="text-sm text-slate-300">{item.label}</span>
             <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-200">{item.status}</span>
           </div>
@@ -597,7 +607,7 @@ function SystemStatusPanel() {
 
 function DailyBriefPanel({ viewModel }: { viewModel: CeoCommandCenterViewModel }) {
   return (
-    <section id="daily-brief" className="rounded-[28px] border border-white/10 bg-white/[0.07] p-5">
+    <section id="daily-brief" className={`${glassPanelClass} p-4`}>
       <SectionTitle icon={<TrendingUp size={18} />} title="สรุปวันนี้" description={viewModel.dailyBrief.summary} />
       <ul className="mt-4 space-y-3">
         {viewModel.dailyBrief.items.slice(0, 4).map((item, index) => (
@@ -642,42 +652,49 @@ function platformIcon(platformId: string, size = 18) {
   return <Bot size={size} />;
 }
 
-function accentClass(accent: PlatformAgent["accent"], variant: "icon" | "badge" | "soft") {
-  const classes: Record<PlatformAgent["accent"], Record<"icon" | "badge" | "soft", string>> = {
+function accentClass(accent: PlatformAgent["accent"], variant: "icon" | "badge" | "soft" | "line") {
+  const classes: Record<PlatformAgent["accent"], Record<"icon" | "badge" | "soft" | "line", string>> = {
     cyan: {
       icon: "bg-cyan-400/15 text-cyan-100",
       badge: "bg-cyan-400/10 text-cyan-200",
-      soft: "bg-cyan-400/10 text-cyan-100"
+      soft: "bg-cyan-400/10 text-cyan-100",
+      line: "bg-cyan-300/70"
     },
     orange: {
       icon: "bg-orange-400/15 text-orange-100",
       badge: "bg-orange-400/10 text-orange-200",
-      soft: "bg-orange-400/10 text-orange-100"
+      soft: "bg-orange-400/10 text-orange-100",
+      line: "bg-orange-300/70"
     },
     violet: {
       icon: "bg-violet-400/15 text-violet-100",
       badge: "bg-violet-400/10 text-violet-200",
-      soft: "bg-violet-400/10 text-violet-100"
+      soft: "bg-violet-400/10 text-violet-100",
+      line: "bg-violet-300/70"
     },
     blue: {
       icon: "bg-blue-400/15 text-blue-100",
       badge: "bg-blue-400/10 text-blue-200",
-      soft: "bg-blue-400/10 text-blue-100"
+      soft: "bg-blue-400/10 text-blue-100",
+      line: "bg-blue-300/70"
     },
     green: {
       icon: "bg-emerald-400/15 text-emerald-100",
       badge: "bg-emerald-400/10 text-emerald-200",
-      soft: "bg-emerald-400/10 text-emerald-100"
+      soft: "bg-emerald-400/10 text-emerald-100",
+      line: "bg-emerald-300/70"
     },
     amber: {
       icon: "bg-amber-400/15 text-amber-100",
       badge: "bg-amber-400/10 text-amber-200",
-      soft: "bg-amber-400/10 text-amber-100"
+      soft: "bg-amber-400/10 text-amber-100",
+      line: "bg-amber-300/70"
     },
     sky: {
       icon: "bg-sky-400/15 text-sky-100",
       badge: "bg-sky-400/10 text-sky-200",
-      soft: "bg-sky-400/10 text-sky-100"
+      soft: "bg-sky-400/10 text-sky-100",
+      line: "bg-sky-300/70"
     }
   };
 
