@@ -32,5 +32,6 @@ The first real operational capability is the Content Department MVP:
 - Keep Content Department as the first proven capability.
 - Make CEO AI the primary command surface.
 - Present internal agents as CEO AI's team, not as primary user controls.
+- Expand the dashboard into a Multi-Platform CEO AI Command Center with TikTok, Shopee, Lazada, Facebook, LINE, Google SEO, and Google Shopping offices represented as CEO-delegated platform teams.
 - Preserve local demo behavior through deterministic and in-memory fallbacks.
 - Improve clarity before adding breadth.

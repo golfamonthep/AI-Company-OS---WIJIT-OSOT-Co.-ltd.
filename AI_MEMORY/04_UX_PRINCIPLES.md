@@ -19,6 +19,7 @@
 - White cards, neutral background, soft borders, calm accent colors.
 - Professional SaaS/admin feel.
 - Avoid cyberpunk, neon, dark glass, and overly futuristic styling on primary MVP routes.
+- Current dashboard exception: the Multi-Platform Command Center uses a dark premium command-center treatment by user request, while preserving CEO-first workflow, approvals, and Thai business wording.
 
 ## Interaction Direction
 

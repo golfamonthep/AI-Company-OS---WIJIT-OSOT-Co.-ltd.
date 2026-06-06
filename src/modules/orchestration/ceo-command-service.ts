@@ -269,9 +269,12 @@ export class CEOCommandService {
 
   private createPlanFromCEOBrain(command: CEOCommand, brainPlan: CEOBrainPlan): CEOPlan {
     const workflowExecution = this.createWorkflowExecution(command);
-    const delegatedTasks = brainPlan.delegatedTasks.map((task) =>
-      this.createDelegatedTaskFromCEOBrain(task, command, workflowExecution.id)
-    );
+    const delegatedTasks = [
+      ...brainPlan.delegatedTasks.map((task) => this.createDelegatedTaskFromCEOBrain(task, command, workflowExecution.id)),
+      ...brainPlan.delegatedPlatformTasks.map((task) =>
+        this.createDelegatedPlatformTaskFromCEOBrain(task, command, workflowExecution.id)
+      )
+    ];
     const approvalCheckpoints = brainPlan.approvalCheckpoints.map((checkpoint) =>
       this.createApprovalCheckpointFromCEOBrain(checkpoint, command, workflowExecution.id)
     );
@@ -306,7 +309,10 @@ export class CEOCommandService {
         integrationMode: "openai_responses_api",
         title: brainPlan.title,
         recommendedStrategy: brainPlan.recommendedStrategy,
+        involvedPlatforms: brainPlan.involvedPlatforms,
+        delegatedPlatformTasks: brainPlan.delegatedPlatformTasks,
         risks: brainPlan.risks,
+        expectedOutputs: brainPlan.expectedOutputs,
         contentWorkflowSuggestion: brainPlan.contentWorkflowSuggestion
       }
     };
@@ -328,6 +334,25 @@ export class CEOCommandService {
       approvalRequired: true,
       workflowExecutionId,
       metadata: { commandId: command.id, department: task.department, agentName: task.agentName }
+    };
+  }
+
+  private createDelegatedPlatformTaskFromCEOBrain(
+    task: CEOBrainPlan["delegatedPlatformTasks"][number],
+    command: CEOCommand,
+    workflowExecutionId: string
+  ): DelegatedTask {
+    return {
+      id: this.createId("delegated-task"),
+      title: task.task,
+      description: `${task.platform}: ${task.task}`,
+      ownerAgentId: toPlatformAgentId(task.platform),
+      status: toDelegatedTaskStatus(task.status),
+      priority: command.intent === "start_workflow" ? "high" : "medium",
+      expectedOutput: task.expectedOutput,
+      approvalRequired: true,
+      workflowExecutionId,
+      metadata: { commandId: command.id, platform: task.platform, agentName: task.platform }
     };
   }
 
@@ -382,6 +407,18 @@ function toOwnerAgentId(agentName: string) {
   if (normalized.includes("operations")) return "operations-ai";
   if (normalized.includes("r&d") || normalized.includes("research")) return "rd-ai";
   return "ceo-ai";
+}
+
+function toPlatformAgentId(platform: string) {
+  const normalized = platform.toLowerCase();
+  if (normalized.includes("tiktok")) return "tiktok-office";
+  if (normalized.includes("shopee")) return "shopee-office";
+  if (normalized.includes("lazada")) return "lazada-office";
+  if (normalized.includes("facebook")) return "facebook-office";
+  if (normalized.includes("line")) return "line-office";
+  if (normalized.includes("shopping")) return "google-shopping-office";
+  if (normalized.includes("seo") || normalized.includes("google")) return "google-seo-office";
+  return toOwnerAgentId(platform);
 }
 
 function toDelegatedTaskStatus(status: string): DelegatedTask["status"] {

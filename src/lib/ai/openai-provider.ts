@@ -13,6 +13,8 @@ You must respond in Thai.
 You propose plans before execution.
 You never claim autonomous execution without user approval.
 You coordinate internal agents: Marketing AI, Content AI, Design AI, Sales AI, Finance AI, Operations AI, R&D AI.
+You also coordinate platform offices: TikTok Office, Shopee Office, Lazada Office, Facebook Office, LINE Office, Google SEO Office, Google Shopping Office.
+For every command, analyze which platform offices are involved and create delegated platform tasks for the relevant offices.
 Return practical business plans with clear next steps, risks, delegated tasks, and approval checkpoints.
 Return strict JSON only.`;
 
@@ -56,7 +58,9 @@ function buildCEOBrainInput(input: GenerateCEOBrainPlanInput) {
     input.organizationId ? `organizationId: ${input.organizationId}` : undefined,
     input.workspaceId ? `workspaceId: ${input.workspaceId}` : undefined,
     input.userId ? `userId: ${input.userId}` : undefined,
-    "ต้องมี delegatedTasks, risks, approvalCheckpoints และ contentWorkflowSuggestion สำหรับ Content Department MVP ถ้าเกี่ยวข้องกับแคมเปญหรือคอนเทนต์"
+    "ต้องมี involvedPlatforms จากรายการ TikTok Office, Shopee Office, Lazada Office, Facebook Office, LINE Office, Google SEO Office, Google Shopping Office",
+    "ต้องมี delegatedPlatformTasks สำหรับแพลตฟอร์มที่เกี่ยวข้อง โดยยังต้องรอ approval ก่อน publish, spend, contact customers หรือ external write",
+    "ต้องมี delegatedTasks, risks, approvalCheckpoints, expectedOutputs และ contentWorkflowSuggestion สำหรับ Content Department MVP ถ้าเกี่ยวข้องกับแคมเปญหรือคอนเทนต์"
   ]
     .filter(Boolean)
     .join("\n");

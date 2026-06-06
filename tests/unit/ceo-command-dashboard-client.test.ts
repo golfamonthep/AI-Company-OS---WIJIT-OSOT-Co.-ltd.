@@ -133,6 +133,8 @@ describe("CEO command dashboard client", () => {
     const preview = createCeoCommandPlanPreview({
       ...plan,
       metadata: {
+        involvedPlatforms: ["TikTok Office", "Shopee Office"],
+        expectedOutputs: ["TikTok launch plan", "Shopee product checklist"],
         risks: ["ข้อความเรื่องสุขภาพต้องตรวจความถูกต้องก่อนเผยแพร่"],
         contentWorkflowSuggestion: {
           campaignAngle: "แม่มั่นใจ เลือกอย่างปลอดภัย",
@@ -146,6 +148,18 @@ describe("CEO command dashboard client", () => {
 
     expect(preview.planPanel.items).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          step: "แพลตฟอร์มที่เกี่ยวข้อง",
+          owner: "CEO AI",
+          status: "รอประสานงาน",
+          detail: "TikTok Office / Shopee Office"
+        }),
+        expect.objectContaining({
+          step: "ผลลัพธ์ที่ควรได้",
+          owner: "CEO AI",
+          status: "รอตรวจ",
+          detail: "TikTok launch plan / Shopee product checklist"
+        }),
         expect.objectContaining({
           step: "ความเสี่ยงที่ CEO AI ให้ตรวจ",
           owner: "CEO AI",

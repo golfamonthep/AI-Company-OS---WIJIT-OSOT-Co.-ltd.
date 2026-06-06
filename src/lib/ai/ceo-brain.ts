@@ -4,6 +4,7 @@ export const ceoBrainPlanSchema = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   recommendedStrategy: z.string().min(1),
+  involvedPlatforms: z.array(z.string().min(1)),
   steps: z.array(z.string().min(1)).min(1),
   delegatedTasks: z
     .array(
@@ -16,6 +17,14 @@ export const ceoBrainPlanSchema = z.object({
       })
     )
     .min(1),
+  delegatedPlatformTasks: z.array(
+    z.object({
+      platform: z.string().min(1),
+      task: z.string().min(1),
+      expectedOutput: z.string().min(1),
+      status: z.string().min(1)
+    })
+  ),
   risks: z.array(z.string().min(1)),
   approvalCheckpoints: z
     .array(
@@ -32,7 +41,8 @@ export const ceoBrainPlanSchema = z.object({
     captions: z.array(z.string().min(1)),
     creativeDirection: z.string().min(1),
     nextApprovalNeeded: z.string().min(1)
-  })
+  }),
+  expectedOutputs: z.array(z.string().min(1))
 });
 
 export type CEOBrainPlan = z.infer<typeof ceoBrainPlanSchema>;
@@ -53,16 +63,20 @@ export const ceoBrainPlanJsonSchema = {
     "title",
     "summary",
     "recommendedStrategy",
+    "involvedPlatforms",
     "steps",
     "delegatedTasks",
+    "delegatedPlatformTasks",
     "risks",
     "approvalCheckpoints",
-    "contentWorkflowSuggestion"
+    "contentWorkflowSuggestion",
+    "expectedOutputs"
   ],
   properties: {
     title: { type: "string" },
     summary: { type: "string" },
     recommendedStrategy: { type: "string" },
+    involvedPlatforms: { type: "array", items: { type: "string" } },
     steps: { type: "array", items: { type: "string" } },
     delegatedTasks: {
       type: "array",
@@ -73,6 +87,20 @@ export const ceoBrainPlanJsonSchema = {
         properties: {
           agentName: { type: "string" },
           department: { type: "string" },
+          task: { type: "string" },
+          expectedOutput: { type: "string" },
+          status: { type: "string" }
+        }
+      }
+    },
+    delegatedPlatformTasks: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["platform", "task", "expectedOutput", "status"],
+        properties: {
+          platform: { type: "string" },
           task: { type: "string" },
           expectedOutput: { type: "string" },
           status: { type: "string" }
@@ -104,6 +132,7 @@ export const ceoBrainPlanJsonSchema = {
         creativeDirection: { type: "string" },
         nextApprovalNeeded: { type: "string" }
       }
-    }
+    },
+    expectedOutputs: { type: "array", items: { type: "string" } }
   }
 } as const;

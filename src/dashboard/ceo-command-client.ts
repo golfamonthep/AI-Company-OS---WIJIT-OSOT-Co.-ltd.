@@ -317,9 +317,29 @@ function toBusinessDetail(detail: string | undefined) {
 }
 
 function createCEOBrainPreviewItems(metadata: CEOPlan["metadata"]): CeoCommandPlanPreview["planPanel"]["items"] {
+  const involvedPlatforms = readStringArrayMetadata(metadata, "involvedPlatforms");
+  const expectedOutputs = readStringArrayMetadata(metadata, "expectedOutputs");
   const risks = readStringArrayMetadata(metadata, "risks");
   const workflowSuggestion = readContentWorkflowSuggestion(metadata);
   const items: CeoCommandPlanPreview["planPanel"]["items"] = [];
+
+  if (involvedPlatforms.length > 0) {
+    items.push({
+      step: "แพลตฟอร์มที่เกี่ยวข้อง",
+      owner: "CEO AI",
+      status: "รอประสานงาน",
+      detail: involvedPlatforms.join(" / ")
+    });
+  }
+
+  if (expectedOutputs.length > 0) {
+    items.push({
+      step: "ผลลัพธ์ที่ควรได้",
+      owner: "CEO AI",
+      status: "รอตรวจ",
+      detail: expectedOutputs.join(" / ")
+    });
+  }
 
   if (risks.length > 0) {
     items.push({
@@ -410,7 +430,14 @@ function toAgentDisplayName(agentId: string) {
     marketing: "ทีมวิเคราะห์ลูกค้า",
     "marketing-ai": "ทีมวิเคราะห์ลูกค้า",
     "ads-performance": "ทีมประเมินโฆษณา",
-    "ads-performance-ai": "ทีมประเมินโฆษณา"
+    "ads-performance-ai": "ทีมประเมินโฆษณา",
+    "tiktok-office": "TikTok Office",
+    "shopee-office": "Shopee Office",
+    "lazada-office": "Lazada Office",
+    "facebook-office": "Facebook Office",
+    "line-office": "LINE Office",
+    "google-seo-office": "Google SEO Office",
+    "google-shopping-office": "Google Shopping Office"
   };
 
   return labels[agentId] ?? agentId;

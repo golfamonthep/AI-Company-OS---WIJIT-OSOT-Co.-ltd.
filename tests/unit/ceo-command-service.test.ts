@@ -73,6 +73,7 @@ describe("CEOCommandService", () => {
         title: "แผนแคมเปญ TikTok สำหรับแม่และเด็ก",
         summary: "CEO AI สรุปแผนแคมเปญให้ตรวจและอนุมัติก่อนเริ่มงาน",
         recommendedStrategy: "เริ่มจากคอนเทนต์ให้ความรู้ที่สร้างความไว้วางใจ แล้วทดสอบมุมขายแบบนุ่มนวล",
+        involvedPlatforms: ["TikTok Office", "Facebook Office", "LINE Office"],
         steps: ["ยืนยันกลุ่มเป้าหมาย", "เตรียมชุดโพสต์ทดลอง", "ตรวจข้อความก่อนเผยแพร่"],
         delegatedTasks: [
           {
@@ -90,6 +91,20 @@ describe("CEOCommandService", () => {
             status: "queued"
           }
         ],
+        delegatedPlatformTasks: [
+          {
+            platform: "TikTok Office",
+            task: "สร้างชุดวิดีโอสั้นสำหรับแม่มือใหม่",
+            expectedOutput: "สคริปต์ TikTok 3 แบบพร้อม hook",
+            status: "queued"
+          },
+          {
+            platform: "LINE Office",
+            task: "เตรียมข้อความติดตามลูกค้าเก่า",
+            expectedOutput: "ข้อความบรอดแคสต์ 2 เวอร์ชัน",
+            status: "queued"
+          }
+        ],
         risks: ["ข้อความเรื่องสุขภาพต้องตรวจความถูกต้องก่อนเผยแพร่"],
         approvalCheckpoints: [
           {
@@ -104,7 +119,8 @@ describe("CEOCommandService", () => {
           captions: ["เริ่มดูแลลูกด้วยข้อมูลที่มั่นใจ"],
           creativeDirection: "ภาพสว่าง อบอุ่น ใช้ภาษาไทยเข้าใจง่าย",
           nextApprovalNeeded: "อนุมัติ angle และ caption ชุดแรก"
-        }
+        },
+        expectedOutputs: ["แผน TikTok", "ข้อความ LINE", "รายการอนุมัติก่อนเผยแพร่"]
       })
     });
 
@@ -118,7 +134,7 @@ describe("CEOCommandService", () => {
       summary: "CEO AI สรุปแผนแคมเปญให้ตรวจและอนุมัติก่อนเริ่มงาน",
       recommendedActions: ["ยืนยันกลุ่มเป้าหมาย", "เตรียมชุดโพสต์ทดลอง", "ตรวจข้อความก่อนเผยแพร่"]
     });
-    expect(plan.delegatedTasks).toHaveLength(2);
+    expect(plan.delegatedTasks).toHaveLength(4);
     expect(plan.delegatedTasks[0]).toMatchObject({
       title: "วิเคราะห์กลุ่มแม่มือใหม่",
       ownerAgentId: "marketing-ai",
@@ -131,10 +147,28 @@ describe("CEOCommandService", () => {
       status: "requested",
       summary: "เจ้าของธุรกิจตรวจ claim และ tone ก่อนนำไปใช้จริง"
     });
+    expect(plan.delegatedTasks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "สร้างชุดวิดีโอสั้นสำหรับแม่มือใหม่",
+          ownerAgentId: "tiktok-office",
+          expectedOutput: "สคริปต์ TikTok 3 แบบพร้อม hook",
+          metadata: expect.objectContaining({ platform: "TikTok Office" })
+        }),
+        expect.objectContaining({
+          title: "เตรียมข้อความติดตามลูกค้าเก่า",
+          ownerAgentId: "line-office",
+          expectedOutput: "ข้อความบรอดแคสต์ 2 เวอร์ชัน",
+          metadata: expect.objectContaining({ platform: "LINE Office" })
+        })
+      ])
+    );
     expect(plan.metadata).toMatchObject({
       integrationMode: "openai_responses_api",
       recommendedStrategy: "เริ่มจากคอนเทนต์ให้ความรู้ที่สร้างความไว้วางใจ แล้วทดสอบมุมขายแบบนุ่มนวล",
+      involvedPlatforms: ["TikTok Office", "Facebook Office", "LINE Office"],
       risks: ["ข้อความเรื่องสุขภาพต้องตรวจความถูกต้องก่อนเผยแพร่"],
+      expectedOutputs: ["แผน TikTok", "ข้อความ LINE", "รายการอนุมัติก่อนเผยแพร่"],
       contentWorkflowSuggestion: {
         campaignAngle: "แม่มั่นใจ เลือกอย่างปลอดภัย",
         nextApprovalNeeded: "อนุมัติ angle และ caption ชุดแรก"
