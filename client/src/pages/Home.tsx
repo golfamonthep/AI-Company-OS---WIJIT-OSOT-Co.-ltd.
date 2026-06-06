@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2 } from "lucide-react";
 
 /**
  * Design: Facebook Ads Performance Analyzer
  * - Deep Blue (#1e3a8a) for trust and analytics
  * - Vibrant Green (#10b981) for positive metrics
+ * - Purple (#a855f7) for business health
  * - Data-driven dashboard aesthetic
  */
 
@@ -34,6 +35,17 @@ interface AnalysisResult {
   score: number;
 }
 
+interface BusinessHealthCheck {
+  audienceScore: number;
+  promotionScore: number;
+  creativeScore: number;
+  systemScore: number;
+  overallScore: number;
+  issues: string[];
+  rootCauses: string[];
+  holisticRecommendations: string[];
+}
+
 export default function Home() {
   const [metrics, setMetrics] = useState<AdMetrics>({
     budget: 0,
@@ -47,6 +59,7 @@ export default function Home() {
   });
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [businessHealth, setBusinessHealth] = useState<BusinessHealthCheck | null>(null);
   const [activeTab, setActiveTab] = useState("input");
 
   const handleInputChange = (field: keyof AdMetrics, value: any) => {
@@ -144,6 +157,104 @@ export default function Home() {
     setActiveTab("results");
   };
 
+  const analyzeBusinessHealth = () => {
+    if (!analysis) return;
+
+    // Calculate health scores based on metrics
+    let audienceScore = 100;
+    let promotionScore = 100;
+    let creativeScore = 100;
+    let systemScore = 100;
+
+    // Audience Score
+    if (metrics.clicks === 0) {
+      audienceScore = 20;
+    } else if (analysis.ctr < 1) {
+      audienceScore = 40;
+    } else if (analysis.ctr < 2) {
+      audienceScore = 70;
+    }
+
+    // Promotion Score (based on ROAS)
+    if (analysis.roas < 1) {
+      promotionScore = 20;
+    } else if (analysis.roas < 1.5) {
+      promotionScore = 50;
+    } else if (analysis.roas < 2.5) {
+      promotionScore = 75;
+    }
+
+    // Creative Score (based on CTR and conversion)
+    if (analysis.ctr < 1 || analysis.conversionRate < 1) {
+      creativeScore = 40;
+    } else if (analysis.ctr < 2 || analysis.conversionRate < 2) {
+      creativeScore = 70;
+    }
+
+    // System Score (based on overall efficiency)
+    const efficiency = (metrics.conversions / metrics.clicks) * 100 || 0;
+    if (efficiency < 1) {
+      systemScore = 50;
+    } else if (efficiency < 2) {
+      systemScore = 75;
+    }
+
+    const overallScore = Math.round((audienceScore + promotionScore + creativeScore + systemScore) / 4);
+
+    // Identify issues
+    const issues: string[] = [];
+    const rootCauses: string[] = [];
+    const holisticRecommendations: string[] = [];
+
+    // Issue detection
+    if (analysis.roas < 2) {
+      issues.push("🔴 ROAS ต่ำ - ธุรกิจไม่ได้เติบโตตามที่คาดหวัง");
+    }
+
+    if (analysis.ctr < 1.5) {
+      issues.push("🔴 CTR ต่ำ - ผู้ชมไม่สนใจโฆษณา");
+    }
+
+    if (analysis.conversionRate < 1) {
+      issues.push("🔴 Conversion Rate ต่ำ - ลูกค้าไม่แปลงเป็นการซื้อ");
+    }
+
+    // Root cause analysis
+    if (analysis.ctr < 1.5 && analysis.conversionRate > 2) {
+      rootCauses.push("📍 ปัญหา: Audience ไม่ตรงกับกลุ่มเป้าหมาย");
+      rootCauses.push("📍 ปัญหา: Creative ไม่น่าสนใจ");
+    }
+
+    if (analysis.ctr > 2 && analysis.conversionRate < 1) {
+      rootCauses.push("📍 ปัญหา: Landing Page หรือ Call-to-Action ไม่ชัดเจน");
+      rootCauses.push("📍 ปัญหา: ระบบการตลาดหลังคลิกไม่มีประสิทธิภาพ");
+    }
+
+    if (analysis.roas < 1.5) {
+      rootCauses.push("📍 ปัญหา: โปรโมชั่นหรือราคาอาจไม่ดึงดูดใจ");
+      rootCauses.push("📍 ปัญหา: ต้นทุนโฆษณาสูงเกินไป");
+    }
+
+    // Holistic recommendations
+    holisticRecommendations.push("🎯 ตรวจสอบ Audience: ลองทำ Lookalike Audience จากลูกค้าที่ซื้อแล้ว");
+    holisticRecommendations.push("🎯 ปรับปรุง Creative: ทดสอบ 3-5 Creative ต่างกัน เลือกตัวที่ CTR สูงสุด");
+    holisticRecommendations.push("🎯 ปรับปรุง Promotion: ลองเพิ่มโปรโมชั่นหรือ Discount เพื่อเพิ่ม Conversion");
+    holisticRecommendations.push("🎯 ปรับปรุง System: ตรวจสอบ Landing Page, Checkout Process, Customer Support");
+    holisticRecommendations.push("🎯 ใช้ Retargeting: ทำ Remarketing แคมเปญให้ผู้ที่ดูแล้วแต่ยังไม่ซื้อ");
+    holisticRecommendations.push("🎯 วิเคราะห์คู่แข่ง: ดูว่าคู่แข่งใช้ Creative, Promotion, Audience แบบไหน");
+
+    setBusinessHealth({
+      audienceScore,
+      promotionScore,
+      creativeScore,
+      systemScore,
+      overallScore,
+      issues,
+      rootCauses,
+      holisticRecommendations,
+    });
+  };
+
   const resetForm = () => {
     setMetrics({
       budget: 0,
@@ -156,6 +267,7 @@ export default function Home() {
       adContent: "",
     });
     setAnalysis(null);
+    setBusinessHealth(null);
     setActiveTab("input");
   };
 
@@ -319,20 +431,20 @@ export default function Home() {
                     เคล็ดลับการใช้งาน
                   </h3>
                   <ul className="space-y-3 text-sm text-blue-800">
-                    <li>{'• '}กรอกข้อมูลจากโฆษณา Facebook ที่ยิงไปแล้ว</li>
-                    <li>{'• '}ระบบจะวิเคราะห์ ROAS, CTR, Conversion Rate</li>
-                    <li>{'• '}ตรวจสอบ Compliance กับนโยบาย Facebook</li>
-                    <li>{'• '}ได้รับคำแนะนำการปรับปรุง</li>
+                    <li>{'\u2022 '}กรอกข้อมูลจากโฆษณา Facebook ที่ยิงไปแล้ว</li>
+                    <li>{'\u2022 '}ระบบจะวิเคราะห์ ROAS, CTR, Conversion Rate</li>
+                    <li>{'\u2022 '}ตรวจสอบ Compliance กับนโยบาย Facebook</li>
+                    <li>{'\u2022 '}ได้รับคำแนะนำการปรับปรุง</li>
                   </ul>
                 </Card>
 
                 <Card className="p-6 border-0 shadow-lg bg-green-50">
                   <h3 className="font-bold text-green-900 mb-4">เมตริกที่สำคัญ</h3>
                   <ul className="space-y-2 text-sm text-green-800">
-                    <li><strong>ROAS:</strong> Return on Ad Spend (เป้า: {'>'} 2.5x)</li>
-                    <li><strong>CTR:</strong> Click-Through Rate (เป้า: {'>'} 2%)</li>
+                    <li><strong>ROAS:</strong> Return on Ad Spend ({'>'} 2.5x)</li>
+                    <li><strong>CTR:</strong> Click-Through Rate ({'>'} 2%)</li>
                     <li><strong>CPC:</strong> Cost Per Click</li>
-                    <li><strong>Conversion Rate:</strong> (เป้า: {'>'} 2%)</li>
+                    <li><strong>Conversion Rate:</strong> ({'>'} 2%)</li>
                   </ul>
                 </Card>
               </div>
@@ -414,17 +526,122 @@ export default function Home() {
                 {/* Action Buttons */}
                 <div className="flex gap-4">
                   <Button 
+                    onClick={() => {
+                      analyzeBusinessHealth();
+                      setActiveTab("business");
+                    }}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                  >
+                    <Building2 className="w-5 h-5 mr-2" />
+                    🏢 ตรวจสอบสุขภาพธุรกิจ
+                  </Button>
+                  <Button 
                     onClick={() => setActiveTab("input")}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
                   >
                     วิเคราะห์โฆษณาอื่น
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Business Health Tab */}
+          {businessHealth && (
+            <div className={activeTab === "business" ? "block" : "hidden"}>
+              <div className="space-y-8">
+                {/* Overall Business Health Score */}
+                <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-lg mb-2">🏢 คะแนนสุขภาพธุรกิจ</p>
+                      <h2 className="text-5xl font-bold">{businessHealth.overallScore}/100</h2>
+                      <p className="text-purple-100 text-sm mt-2">ตรวจสอบ 4 ด้าน: Audience, Promotion, Creative, System</p>
+                    </div>
+                    <div className="text-6xl font-bold opacity-20">{businessHealth.overallScore >= 70 ? "✓" : "⚠"}</div>
+                  </div>
+                </Card>
+
+                {/* Health Scores */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <Card className="p-6 border-0 shadow-lg">
+                    <p className="text-muted-foreground text-sm mb-2">👥 Audience</p>
+                    <h3 className="text-3xl font-bold text-blue-600">{businessHealth.audienceScore}</h3>
+                    <p className="text-xs text-muted-foreground mt-2">กลุ่มเป้าหมาย</p>
+                  </Card>
+                  
+                  <Card className="p-6 border-0 shadow-lg">
+                    <p className="text-muted-foreground text-sm mb-2">🎁 Promotion</p>
+                    <h3 className="text-3xl font-bold text-green-600">{businessHealth.promotionScore}</h3>
+                    <p className="text-xs text-muted-foreground mt-2">โปรโมชั่น/ราคา</p>
+                  </Card>
+                  
+                  <Card className="p-6 border-0 shadow-lg">
+                    <p className="text-muted-foreground text-sm mb-2">🎨 Creative</p>
+                    <h3 className="text-3xl font-bold text-amber-600">{businessHealth.creativeScore}</h3>
+                    <p className="text-xs text-muted-foreground mt-2">สร้างสรรค์/ดีไซน์</p>
+                  </Card>
+                  
+                  <Card className="p-6 border-0 shadow-lg">
+                    <p className="text-muted-foreground text-sm mb-2">⚙️ System</p>
+                    <h3 className="text-3xl font-bold text-purple-600">{businessHealth.systemScore}</h3>
+                    <p className="text-xs text-muted-foreground mt-2">ระบบการตลาด</p>
+                  </Card>
+                </div>
+
+                {/* Issues */}
+                {businessHealth.issues.length > 0 && (
+                  <Card className="p-6 border-0 shadow-lg border-l-4 border-red-500 bg-red-50">
+                    <h3 className="font-bold text-red-900 mb-4">🚨 ปัญหาที่พบ</h3>
+                    <ul className="space-y-2">
+                      {businessHealth.issues.map((issue, idx) => (
+                        <li key={idx} className="text-red-800 text-sm">{issue}</li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {/* Root Causes */}
+                {businessHealth.rootCauses.length > 0 && (
+                  <Card className="p-6 border-0 shadow-lg border-l-4 border-orange-500 bg-orange-50">
+                    <h3 className="font-bold text-orange-900 mb-4">🔍 สาเหตุหลัก</h3>
+                    <ul className="space-y-2">
+                      {businessHealth.rootCauses.map((cause, idx) => (
+                        <li key={idx} className="text-orange-800 text-sm">{cause}</li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {/* Holistic Recommendations */}
+                <Card className="p-6 border-0 shadow-lg">
+                  <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
+                    💡 คำแนะนำการปรับปรุงโดยรวม
+                  </h3>
+                  <ul className="space-y-3">
+                    {businessHealth.holisticRecommendations.map((rec, idx) => (
+                      <li key={idx} className="text-foreground text-sm p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <Button 
+                    onClick={() => setActiveTab("results")}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+                  >
+                    ← กลับไปดูผลวิเคราะห์โฆษณา
                   </Button>
                   <Button 
                     onClick={resetForm}
                     variant="outline"
                     className="flex-1 font-semibold py-3"
                   >
-                    เริ่มใหม่
+                    เริ่มวิเคราะห์ใหม่
                   </Button>
                 </div>
               </div>
