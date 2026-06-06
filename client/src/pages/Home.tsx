@@ -84,6 +84,22 @@ interface BudgetOptimizationData {
   estimatedImpressions: number;
 }
 
+interface AudienceSegment {
+  name: string;
+  size: number;
+  ageRange: string;
+  interests: string;
+  purchaseFrequency: string;
+}
+
+interface PerformanceData {
+  date: string;
+  roas: number;
+  ctr: number;
+  cpc: number;
+  conversions: number;
+}
+
 export default function Home() {
   const [metrics, setMetrics] = useState<AdMetrics>({
     budget: 0,
@@ -124,6 +140,25 @@ export default function Home() {
 
   const [abTestResult, setABTestResult] = useState<any>(null);
   const [budgetOptResult, setBudgetOptResult] = useState<any>(null);
+
+  const [audiences, setAudiences] = useState<AudienceSegment[]>([]);
+  const [newAudience, setNewAudience] = useState<AudienceSegment>({
+    name: "",
+    size: 0,
+    ageRange: "18-35",
+    interests: "",
+    purchaseFrequency: "monthly"
+  });
+
+  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([
+    { date: "Day 1", roas: 2.1, ctr: 1.8, cpc: 12, conversions: 5 },
+    { date: "Day 2", roas: 2.3, ctr: 1.9, cpc: 11, conversions: 7 },
+    { date: "Day 3", roas: 2.5, ctr: 2.1, cpc: 10, conversions: 9 },
+    { date: "Day 4", roas: 2.4, ctr: 2.0, cpc: 10.5, conversions: 8 },
+    { date: "Day 5", roas: 2.8, ctr: 2.3, cpc: 9, conversions: 11 },
+    { date: "Day 6", roas: 3.0, ctr: 2.4, cpc: 8.5, conversions: 13 },
+    { date: "Day 7", roas: 3.2, ctr: 2.5, cpc: 8, conversions: 15 }
+  ]);
 
   // Load history from localStorage
   useEffect(() => {
@@ -409,6 +444,25 @@ export default function Home() {
       setAnalysisHistory([]);
       localStorage.removeItem("analysisHistory");
     }
+  };
+
+  const addAudience = () => {
+    if (!newAudience.name || newAudience.size === 0) {
+      alert("กรุณากรอกชื่อและขนาด Audience");
+      return;
+    }
+    setAudiences([...audiences, newAudience]);
+    setNewAudience({
+      name: "",
+      size: 0,
+      ageRange: "18-35",
+      interests: "",
+      purchaseFrequency: "monthly"
+    });
+  };
+
+  const removeAudience = (index: number) => {
+    setAudiences(audiences.filter((_, i) => i !== index));
   };
 
   const analyzeABTest = () => {
@@ -777,6 +831,20 @@ export default function Home() {
                   >
                     <TrendingUp className="w-5 h-5 mr-2" />
                     💰 Budget
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("audience")}
+                    className="flex-1 min-w-max bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    👤 Audience
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("dashboard")}
+                    className="flex-1 min-w-max bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3"
+                  >
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    📈 Dashboard
                   </Button>
                   <Button 
                     onClick={() => setActiveTab("input")}
@@ -1418,6 +1486,176 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* Audience Segmentation Tab */}
+          <div className={activeTab === "audience" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-rose-600 to-pink-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-rose-100 text-lg mb-2">👤 Audience Segmentation Tool</p>
+                    <h2 className="text-3xl font-bold">แบ่ง Audience เพื่อ Target ที่แม่นยำ</h2>
+                  </div>
+                  <Users className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-rose-900 mb-6">สร้าง Audience Segment ใหม่</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="font-semibold mb-2 block">ชื่อ Audience</Label>
+                    <Input placeholder="เช่น Women 25-35" value={newAudience.name} onChange={(e) => setNewAudience({...newAudience, name: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="font-semibold mb-2 block">ขนาด Audience</Label>
+                      <Input type="number" placeholder="เช่น 50000" value={newAudience.size || ""} onChange={(e) => setNewAudience({...newAudience, size: parseFloat(e.target.value) || 0})} />
+                    </div>
+                    <div>
+                      <Label className="font-semibold mb-2 block">ช่วงอายุ</Label>
+                      <select value={newAudience.ageRange} onChange={(e) => setNewAudience({...newAudience, ageRange: e.target.value})} className="w-full px-3 py-2 border border-border rounded-md">
+                        <option>18-25</option>
+                        <option>25-35</option>
+                        <option>35-45</option>
+                        <option>45-55</option>
+                        <option>55+</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="font-semibold mb-2 block">ความสนใจ</Label>
+                    <Input placeholder="เช่น สุขภาพ, สมุนไพร" value={newAudience.interests} onChange={(e) => setNewAudience({...newAudience, interests: e.target.value})} />
+                  </div>
+                  <div>
+                    <Label className="font-semibold mb-2 block">ความถี่ซื้อ</Label>
+                    <select value={newAudience.purchaseFrequency} onChange={(e) => setNewAudience({...newAudience, purchaseFrequency: e.target.value})} className="w-full px-3 py-2 border border-border rounded-md">
+                      <option value="monthly">รายเดือน</option>
+                      <option value="quarterly">รายไตรมาส</option>
+                      <option value="yearly">รายปี</option>
+                      <option value="occasional">บางครั้ง</option>
+                    </select>
+                  </div>
+                </div>
+              </Card>
+
+              <Button onClick={addAudience} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3">
+                <Plus className="w-5 h-5 mr-2" />
+                เพิ่ม Audience Segment
+              </Button>
+
+              {audiences.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-rose-900">Audience Segments ({audiences.length})</h3>
+                  {audiences.map((aud, idx) => (
+                    <Card key={idx} className="p-6 border-0 shadow-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-rose-900 mb-3">{aud.name}</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground">ขนาด</p>
+                              <p className="font-semibold">{aud.size.toLocaleString()} คน</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">ช่วงอายุ</p>
+                              <p className="font-semibold">{aud.ageRange} ปี</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">ความสนใจ</p>
+                              <p className="font-semibold">{aud.interests}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">ความถี่ซื้อ</p>
+                              <p className="font-semibold">{aud.purchaseFrequency === "monthly" ? "รายเดือน" : aud.purchaseFrequency === "quarterly" ? "รายไตรมาส" : aud.purchaseFrequency === "yearly" ? "รายปี" : "บางครั้ง"}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button onClick={() => removeAudience(idx)} variant="outline" className="text-red-600 hover:text-red-700">
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Dashboard Tab */}
+          <div className={activeTab === "dashboard" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-teal-600 to-cyan-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-teal-100 text-lg mb-2">📈 Campaign Performance Dashboard</p>
+                    <h2 className="text-3xl font-bold">ติดตามประสิทธิภาพโฆษณาแบบ Real-Time</h2>
+                  </div>
+                  <BarChart3 className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-teal-900 mb-6">แนวโน้ม ROAS (7 วัน)</h3>
+                <div className="grid grid-cols-7 gap-2">
+                  {performanceData.map((data, idx) => (
+                    <div key={idx} className="text-center p-3 bg-teal-50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">{data.date}</p>
+                      <p className="font-bold text-teal-900 text-lg">{data.roas}x</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="p-6 border-0 shadow-lg">
+                  <p className="text-muted-foreground text-sm mb-2">ROAS เฉลี่ย</p>
+                  <h3 className="text-3xl font-bold text-teal-600">{(performanceData.reduce((a, b) => a + b.roas, 0) / performanceData.length).toFixed(2)}x</h3>
+                  <p className="text-xs text-muted-foreground mt-2">Return on Ad Spend</p>
+                </Card>
+                <Card className="p-6 border-0 shadow-lg">
+                  <p className="text-muted-foreground text-sm mb-2">CTR เฉลี่ย</p>
+                  <h3 className="text-3xl font-bold text-cyan-600">{(performanceData.reduce((a, b) => a + b.ctr, 0) / performanceData.length).toFixed(2)}%</h3>
+                  <p className="text-xs text-muted-foreground mt-2">Click-Through Rate</p>
+                </Card>
+                <Card className="p-6 border-0 shadow-lg">
+                  <p className="text-muted-foreground text-sm mb-2">CPC เฉลี่ย</p>
+                  <h3 className="text-3xl font-bold text-blue-600">฿{(performanceData.reduce((a, b) => a + b.cpc, 0) / performanceData.length).toFixed(1)}</h3>
+                  <p className="text-xs text-muted-foreground mt-2">Cost Per Click</p>
+                </Card>
+              </div>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-teal-900 mb-6">📊 สรุป 7 วัน</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-teal-50 rounded-lg">
+                    <span className="text-muted-foreground">Conversions ทั้งหมด</span>
+                    <span className="font-bold text-teal-900">{performanceData.reduce((a, b) => a + b.conversions, 0)} conversions</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-cyan-50 rounded-lg">
+                    <span className="text-muted-foreground">ROAS สูงสุด</span>
+                    <span className="font-bold text-cyan-900">{Math.max(...performanceData.map(d => d.roas))}x</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                    <span className="text-muted-foreground">CPC ต่ำสุด</span>
+                    <span className="font-bold text-blue-900">฿{Math.min(...performanceData.map(d => d.cpc))}</span>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex gap-4">
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
         </Tabs>
       </main>
 
