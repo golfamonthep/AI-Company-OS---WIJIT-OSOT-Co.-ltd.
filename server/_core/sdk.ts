@@ -39,8 +39,19 @@ class OAuthService {
   }
 
   private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
+    const decoded = atob(state);
+    // Try to parse as JSON {origin, returnPath} — new format from getLoginUrl()
+    try {
+      const parsed = JSON.parse(decoded);
+      if (parsed?.origin && typeof parsed.origin === "string") {
+        // Build the callback URL: origin + /api/oauth/callback
+        return `${parsed.origin}/api/oauth/callback`;
+      }
+    } catch {
+      // Not JSON — fall through to legacy plain-URL format
+    }
+    // Legacy format: plain URL string
+    return decoded;
   }
 
   async getTokenByCode(
