@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2, Users, Download, Trash2, Plus } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, BarChart3, Lightbulb, Building2, Users, Download, Trash2, Plus, Zap, TrendingDown } from "lucide-react";
 
 
 /**
@@ -62,6 +62,28 @@ interface AnalysisHistory {
   businessHealth: BusinessHealthCheck | null;
 }
 
+interface ABTestData {
+  nameA: string;
+  nameB: string;
+  budgetA: number;
+  impressionsA: number;
+  clicksA: number;
+  conversionsA: number;
+  revenueA: number;
+  budgetB: number;
+  impressionsB: number;
+  clicksB: number;
+  conversionsB: number;
+  revenueB: number;
+}
+
+interface BudgetOptimizationData {
+  currentBudget: number;
+  currentRoas: number;
+  targetRoas: number;
+  estimatedImpressions: number;
+}
+
 export default function Home() {
   const [metrics, setMetrics] = useState<AdMetrics>({
     budget: 0,
@@ -85,6 +107,23 @@ export default function Home() {
     interests: "",
     purchaseFrequency: "monthly"
   });
+
+  const [abTestData, setABTestData] = useState<ABTestData>({
+    nameA: "Creative A",
+    nameB: "Creative B",
+    budgetA: 0, impressionsA: 0, clicksA: 0, conversionsA: 0, revenueA: 0,
+    budgetB: 0, impressionsB: 0, clicksB: 0, conversionsB: 0, revenueB: 0
+  });
+
+  const [budgetOptData, setBudgetOptData] = useState<BudgetOptimizationData>({
+    currentBudget: 0,
+    currentRoas: 0,
+    targetRoas: 0,
+    estimatedImpressions: 0
+  });
+
+  const [abTestResult, setABTestResult] = useState<any>(null);
+  const [budgetOptResult, setBudgetOptResult] = useState<any>(null);
 
   // Load history from localStorage
   useEffect(() => {
@@ -370,6 +409,65 @@ export default function Home() {
       setAnalysisHistory([]);
       localStorage.removeItem("analysisHistory");
     }
+  };
+
+  const analyzeABTest = () => {
+    if (abTestData.budgetA === 0 || abTestData.budgetB === 0) {
+      alert("กรุณากรอกข้อมูล Budget สำหรับทั้ง A และ B");
+      return;
+    }
+
+    const roasA = abTestData.revenueA / abTestData.budgetA;
+    const roasB = abTestData.revenueB / abTestData.budgetB;
+    const ctrA = (abTestData.clicksA / abTestData.impressionsA) * 100 || 0;
+    const ctrB = (abTestData.clicksB / abTestData.impressionsB) * 100 || 0;
+    const cpcA = abTestData.budgetA / abTestData.clicksA || 0;
+    const cpcB = abTestData.budgetB / abTestData.clicksB || 0;
+    const convRateA = (abTestData.conversionsA / abTestData.clicksA) * 100 || 0;
+    const convRateB = (abTestData.conversionsB / abTestData.clicksB) * 100 || 0;
+
+    const winner = roasA > roasB ? "A" : roasB > roasA ? "B" : "Draw";
+    const roasDiff = Math.abs(roasA - roasB);
+    const roasDiffPercent = ((roasDiff / Math.min(roasA, roasB)) * 100).toFixed(1);
+
+    setABTestResult({
+      winner,
+      roasA: Math.round(roasA * 100) / 100,
+      roasB: Math.round(roasB * 100) / 100,
+      roasDiffPercent,
+      ctrA: Math.round(ctrA * 100) / 100,
+      ctrB: Math.round(ctrB * 100) / 100,
+      cpcA: Math.round(cpcA * 100) / 100,
+      cpcB: Math.round(cpcB * 100) / 100,
+      convRateA: Math.round(convRateA * 100) / 100,
+      convRateB: Math.round(convRateB * 100) / 100
+    });
+    setActiveTab("abtest-result");
+  };
+
+  const optimizeBudget = () => {
+    if (budgetOptData.currentBudget === 0 || budgetOptData.currentRoas === 0 || budgetOptData.targetRoas === 0) {
+      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    const budgetMultiplier = budgetOptData.targetRoas / budgetOptData.currentRoas;
+    const recommendedBudget = budgetOptData.currentBudget * budgetMultiplier;
+    const budgetIncrease = recommendedBudget - budgetOptData.currentBudget;
+    const estimatedRevenue = recommendedBudget * budgetOptData.targetRoas;
+    const estimatedProfit = estimatedRevenue - recommendedBudget;
+
+    setBudgetOptResult({
+      currentBudget: budgetOptData.currentBudget,
+      currentRoas: budgetOptData.currentRoas,
+      targetRoas: budgetOptData.targetRoas,
+      recommendedBudget: Math.round(recommendedBudget * 100) / 100,
+      budgetIncrease: Math.round(budgetIncrease * 100) / 100,
+      estimatedRevenue: Math.round(estimatedRevenue * 100) / 100,
+      estimatedProfit: Math.round(estimatedProfit * 100) / 100,
+      roi: Math.round(((estimatedRevenue - recommendedBudget) / recommendedBudget) * 100)
+    });
+    setActiveTab("budget-result");
   };
 
   const resetForm = () => {
@@ -665,6 +763,20 @@ export default function Home() {
                   >
                     <Download className="w-5 h-5 mr-2" />
                     📊 ประวัติ
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("abtest")}
+                    className="flex-1 min-w-max bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3"
+                  >
+                    <Zap className="w-5 h-5 mr-2" />
+                    ⚡ A/B Test
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("budget")}
+                    className="flex-1 min-w-max bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
+                  >
+                    <TrendingUp className="w-5 h-5 mr-2" />
+                    💰 Budget
                   </Button>
                   <Button 
                     onClick={() => setActiveTab("input")}
@@ -1004,6 +1116,308 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* A/B Testing Tab */}
+          <div className={activeTab === "abtest" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-indigo-100 text-lg mb-2">⚡ A/B Testing Analyzer</p>
+                    <h2 className="text-3xl font-bold">เปรียบเทียบประสิทธิภาพ Creative A vs B</h2>
+                  </div>
+                  <Zap className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Creative A */}
+                <Card className="p-6 border-0 shadow-lg border-l-4 border-indigo-500">
+                  <h3 className="text-xl font-bold text-indigo-900 mb-6">Creative A</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="font-semibold mb-2 block">ชื่อ</Label>
+                      <Input value={abTestData.nameA} onChange={(e) => setABTestData({...abTestData, nameA: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="font-semibold mb-2 block">Budget (฿)</Label>
+                        <Input type="number" value={abTestData.budgetA || ""} onChange={(e) => setABTestData({...abTestData, budgetA: parseFloat(e.target.value) || 0})} />
+                      </div>
+                      <div>
+                        <Label className="font-semibold mb-2 block">Impressions</Label>
+                        <Input type="number" value={abTestData.impressionsA || ""} onChange={(e) => setABTestData({...abTestData, impressionsA: parseFloat(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="font-semibold mb-2 block">Clicks</Label>
+                        <Input type="number" value={abTestData.clicksA || ""} onChange={(e) => setABTestData({...abTestData, clicksA: parseFloat(e.target.value) || 0})} />
+                      </div>
+                      <div>
+                        <Label className="font-semibold mb-2 block">Conversions</Label>
+                        <Input type="number" value={abTestData.conversionsA || ""} onChange={(e) => setABTestData({...abTestData, conversionsA: parseFloat(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="font-semibold mb-2 block">Revenue (฿)</Label>
+                      <Input type="number" value={abTestData.revenueA || ""} onChange={(e) => setABTestData({...abTestData, revenueA: parseFloat(e.target.value) || 0})} />
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Creative B */}
+                <Card className="p-6 border-0 shadow-lg border-l-4 border-purple-500">
+                  <h3 className="text-xl font-bold text-purple-900 mb-6">Creative B</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="font-semibold mb-2 block">ชื่อ</Label>
+                      <Input value={abTestData.nameB} onChange={(e) => setABTestData({...abTestData, nameB: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="font-semibold mb-2 block">Budget (฿)</Label>
+                        <Input type="number" value={abTestData.budgetB || ""} onChange={(e) => setABTestData({...abTestData, budgetB: parseFloat(e.target.value) || 0})} />
+                      </div>
+                      <div>
+                        <Label className="font-semibold mb-2 block">Impressions</Label>
+                        <Input type="number" value={abTestData.impressionsB || ""} onChange={(e) => setABTestData({...abTestData, impressionsB: parseFloat(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="font-semibold mb-2 block">Clicks</Label>
+                        <Input type="number" value={abTestData.clicksB || ""} onChange={(e) => setABTestData({...abTestData, clicksB: parseFloat(e.target.value) || 0})} />
+                      </div>
+                      <div>
+                        <Label className="font-semibold mb-2 block">Conversions</Label>
+                        <Input type="number" value={abTestData.conversionsB || ""} onChange={(e) => setABTestData({...abTestData, conversionsB: parseFloat(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="font-semibold mb-2 block">Revenue (฿)</Label>
+                      <Input type="number" value={abTestData.revenueB || ""} onChange={(e) => setABTestData({...abTestData, revenueB: parseFloat(e.target.value) || 0})} />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                <Button onClick={analyzeABTest} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3">
+                  <Zap className="w-5 h-5 mr-2" />
+                  เปรียบเทียบ A vs B
+                </Button>
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* A/B Test Result Tab */}
+          {abTestResult && (
+            <div className={activeTab === "abtest-result" ? "block" : "hidden"}>
+              <div className="space-y-8">
+                <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-indigo-100 text-lg mb-2">🏆 ผลการเปรียบเทียบ</p>
+                      <h2 className="text-3xl font-bold">Creative {abTestResult.winner} ชนะ! ({abTestResult.roasDiffPercent}% ดีกว่า)</h2>
+                    </div>
+                  </div>
+                </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Creative A Results */}
+                  <Card className="p-6 border-0 shadow-lg">
+                    <h3 className="text-xl font-bold text-indigo-900 mb-6">{abTestData.nameA}</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-indigo-50 rounded-lg">
+                        <span className="text-muted-foreground">ROAS</span>
+                        <span className="font-bold text-indigo-900">{abTestResult.roasA}x</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="text-muted-foreground">CTR</span>
+                        <span className="font-bold text-blue-900">{abTestResult.ctrA}%</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                        <span className="text-muted-foreground">CPC</span>
+                        <span className="font-bold text-amber-900">฿{abTestResult.cpcA}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-muted-foreground">Conversion Rate</span>
+                        <span className="font-bold text-purple-900">{abTestResult.convRateA}%</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Creative B Results */}
+                  <Card className="p-6 border-0 shadow-lg">
+                    <h3 className="text-xl font-bold text-purple-900 mb-6">{abTestData.nameB}</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-muted-foreground">ROAS</span>
+                        <span className="font-bold text-purple-900">{abTestResult.roasB}x</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="text-muted-foreground">CTR</span>
+                        <span className="font-bold text-blue-900">{abTestResult.ctrB}%</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                        <span className="text-muted-foreground">CPC</span>
+                        <span className="font-bold text-amber-900">฿{abTestResult.cpcB}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-muted-foreground">Conversion Rate</span>
+                        <span className="font-bold text-purple-900">{abTestResult.convRateB}%</span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Recommendation */}
+                <Card className="p-6 border-0 shadow-lg bg-green-50 border-l-4 border-green-500">
+                  <h3 className="font-bold text-green-900 mb-4">✅ คำแนะนำ</h3>
+                  <ul className="space-y-2 text-green-800 text-sm">
+                    <li>• ใช้ Creative {abTestResult.winner} เพราะมี ROAS สูงกว่า {abTestResult.roasDiffPercent}%</li>
+                    <li>• หากต้องการ Scale ให้เพิ่ม Budget ของ Creative {abTestResult.winner}</li>
+                    <li>• ศึกษา Creative {abTestResult.winner} เพื่อนำไปปรับปรุง Creative อื่นๆ</li>
+                  </ul>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <Button onClick={() => setActiveTab("abtest")} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3">
+                    ← ทดสอบอีกครั้ง
+                  </Button>
+                  <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                    วิเคราะห์โฆษณาใหม่
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Budget Optimizer Tab */}
+          <div className={activeTab === "budget" ? "block" : "hidden"}>
+            <div className="space-y-8">
+              <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-orange-600 to-red-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-100 text-lg mb-2">💰 Campaign Budget Optimizer</p>
+                    <h2 className="text-3xl font-bold">คำนวณ Budget ที่เหมาะสมเพื่อบรรลุเป้าหมาย</h2>
+                  </div>
+                  <TrendingUp className="w-16 h-16 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-lg">
+                <h3 className="text-xl font-bold text-orange-900 mb-6">ข้อมูลปัจจุบัน</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div>
+                    <Label className="font-semibold mb-2 block">Budget ปัจจุบัน (฿)</Label>
+                    <Input type="number" placeholder="เช่น 5000" value={budgetOptData.currentBudget || ""} onChange={(e) => setBudgetOptData({...budgetOptData, currentBudget: parseFloat(e.target.value) || 0})} />
+                  </div>
+                  <div>
+                    <Label className="font-semibold mb-2 block">ROAS ปัจจุบัน</Label>
+                    <Input type="number" placeholder="เช่น 2.5" step="0.1" value={budgetOptData.currentRoas || ""} onChange={(e) => setBudgetOptData({...budgetOptData, currentRoas: parseFloat(e.target.value) || 0})} />
+                  </div>
+                  <div>
+                    <Label className="font-semibold mb-2 block">เป้าหมาย ROAS</Label>
+                    <Input type="number" placeholder="เช่น 3.5" step="0.1" value={budgetOptData.targetRoas || ""} onChange={(e) => setBudgetOptData({...budgetOptData, targetRoas: parseFloat(e.target.value) || 0})} />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                <Button onClick={optimizeBudget} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  คำนวณ Budget ที่เหมาะสม
+                </Button>
+                <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                  ← กลับ
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Budget Optimizer Result Tab */}
+          {budgetOptResult && (
+            <div className={activeTab === "budget-result" ? "block" : "hidden"}>
+              <div className="space-y-8">
+                <Card className="p-8 border-0 shadow-lg bg-gradient-to-r from-orange-600 to-red-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100 text-lg mb-2">📊 ผลการคำนวณ</p>
+                      <h2 className="text-3xl font-bold">Budget ที่แนะนำ: ฿{budgetOptResult.recommendedBudget}</h2>
+                    </div>
+                  </div>
+                </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Current vs Recommended */}
+                  <Card className="p-6 border-0 shadow-lg">
+                    <h3 className="font-bold text-orange-900 mb-6">📈 เปรียบเทียบ</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                        <span className="text-muted-foreground">Budget ปัจจุบัน</span>
+                        <span className="font-bold text-orange-900">฿{budgetOptResult.currentBudget}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="text-muted-foreground">Budget ที่แนะนำ</span>
+                        <span className="font-bold text-green-900">฿{budgetOptResult.recommendedBudget}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="text-muted-foreground">เพิ่ม Budget</span>
+                        <span className="font-bold text-blue-900">฿{budgetOptResult.budgetIncrease}</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Projected Results */}
+                  <Card className="p-6 border-0 shadow-lg">
+                    <h3 className="font-bold text-orange-900 mb-6">🎯 ผลลัพธ์ที่คาดการณ์</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-muted-foreground">รายได้ที่คาดการณ์</span>
+                        <span className="font-bold text-purple-900">฿{budgetOptResult.estimatedRevenue}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="text-muted-foreground">กำไรที่คาดการณ์</span>
+                        <span className="font-bold text-green-900">฿{budgetOptResult.estimatedProfit}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                        <span className="text-muted-foreground">ROI</span>
+                        <span className="font-bold text-amber-900">{budgetOptResult.roi}%</span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Recommendation */}
+                <Card className="p-6 border-0 shadow-lg bg-green-50 border-l-4 border-green-500">
+                  <h3 className="font-bold text-green-900 mb-4">✅ คำแนะนำ</h3>
+                  <ul className="space-y-2 text-green-800 text-sm">
+                    <li>• เพิ่ม Budget จาก ฿{budgetOptResult.currentBudget} เป็น ฿{budgetOptResult.recommendedBudget}</li>
+                    <li>• คาดว่าจะได้รายได้ ฿{budgetOptResult.estimatedRevenue} และกำไร ฿{budgetOptResult.estimatedProfit}</li>
+                    <li>• ROI ที่คาดการณ์ {budgetOptResult.roi}% - ลงทุนคุ้มค่า</li>
+                  </ul>
+                </Card>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <Button onClick={() => setActiveTab("budget")} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3">
+                    ← คำนวณอีกครั้ง
+                  </Button>
+                  <Button onClick={() => setActiveTab("input")} variant="outline" className="flex-1 font-semibold py-3">
+                    วิเคราะห์โฆษณาใหม่
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </Tabs>
       </main>
 
