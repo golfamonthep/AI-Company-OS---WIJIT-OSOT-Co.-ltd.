@@ -5,12 +5,18 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-
+import AdAnalyzer from "./pages/AdAnalyzer";
+import AdCopyGenerator from "./pages/AdCopyGenerator";
+import HealthCheck from "./pages/HealthCheck";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/analyzer"} component={AdAnalyzer} />
+      <Route path={"/copy-generator"} component={AdCopyGenerator} />
+      <Route path={"/health-check"} component={HealthCheck} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
