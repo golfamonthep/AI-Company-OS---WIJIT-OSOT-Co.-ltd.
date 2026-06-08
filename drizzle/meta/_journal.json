@@ -29,6 +29,13 @@
       "when": 1780896552358,
       "tag": "0003_equal_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1780900339170,
+      "tag": "0004_wakeful_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

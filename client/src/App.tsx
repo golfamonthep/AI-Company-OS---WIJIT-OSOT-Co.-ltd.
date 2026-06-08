@@ -10,6 +10,7 @@ import AdCopyGenerator from "./pages/AdCopyGenerator";
 import HealthCheck from "./pages/HealthCheck";
 import Dashboard from "./pages/Dashboard";
 import BudgetMonitor from "./pages/BudgetMonitor";
+import AutoReport from "./pages/AutoReport";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -21,6 +22,7 @@ function Router() {
       <Route path={"/health-check"} component={HealthCheck} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/budget-monitor"} component={BudgetMonitor} />
+      <Route path={"/auto-report"} component={AutoReport} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

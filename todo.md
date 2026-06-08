@@ -81,3 +81,24 @@
 - [x] Frontend: Summary KPI cards (total rules, active, triggered, log count)
 - [x] Frontend: Budget Monitor link in Home.tsx nav and features
 - [x] Vitest tests for budgetAlert router and alertEngine (18 tests passing)
+
+## Automated Report System
+- [ ] Database schema: report_schedules table (user, ad account, schedule config, cron task uid)
+- [ ] Database schema: report_logs table (history of sent reports)
+- [ ] Backend: reportGenerator.ts — fetch Meta API insights (Spend, Leads, Purchases, ROAS, Impressions, Clicks)
+- [ ] Backend: generatePdfReport() using pdfkit/jsPDF — styled summary table + KPI cards
+- [ ] Backend: generateExcelReport() using exceljs — formatted spreadsheet with daily breakdown
+- [ ] Backend: upload generated file to S3 storage and return URL
+- [ ] tRPC router: report.createSchedule (create schedule + heartbeat cron 8:00 UTC+7 = 01:00 UTC)
+- [ ] tRPC router: report.listSchedules
+- [ ] tRPC router: report.updateSchedule (change format, channels, toggle active)
+- [ ] tRPC router: report.deleteSchedule (delete + cancel heartbeat)
+- [ ] tRPC router: report.getLogs (view sent report history)
+- [ ] tRPC router: report.sendNow (manual trigger)
+- [ ] Scheduled endpoint: POST /api/scheduled/send-report (heartbeat handler)
+- [ ] Frontend: /auto-report page with schedule management
+- [ ] Frontend: Create Schedule dialog (ad account, format PDF/Excel, channels LINE/Email)
+- [ ] Frontend: Schedule list with toggle active / delete / send now
+- [ ] Frontend: Report history log with download links
+- [ ] Frontend: Auto Report link in Home.tsx nav and features
+- [ ] Vitest tests for report router and report generator

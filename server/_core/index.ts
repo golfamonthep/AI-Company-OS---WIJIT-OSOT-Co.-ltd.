@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { sdk } from "./sdk";
 import { runAlertChecks } from "../alertEngine";
+import { handleSendReportCron } from "../routers/report";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -62,6 +63,27 @@ async function startServer() {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[/api/scheduled/check-budget]", message);
+      return res.status(500).json({
+        error: message,
+        context: { url: req.url, taskUid: "unknown" },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // ─── Scheduled: Automated Report Send ─────────────────────────────────────
+  app.post("/api/scheduled/send-report", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+
+      const result = await handleSendReportCron(user.taskUid);
+      return res.json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[/api/scheduled/send-report]", message);
       return res.status(500).json({
         error: message,
         context: { url: req.url, taskUid: "unknown" },

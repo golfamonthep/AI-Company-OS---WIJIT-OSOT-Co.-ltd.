@@ -1,6 +1,6 @@
 import { eq, desc, and, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache, budgetAlerts, InsertBudgetAlert, alertLogs, InsertAlertLog, notificationSettings, InsertNotificationSettings } from "../drizzle/schema";
+import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache, budgetAlerts, InsertBudgetAlert, alertLogs, InsertAlertLog, notificationSettings, InsertNotificationSettings, reportSchedules, InsertReportSchedule, reportLogs, InsertReportLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -292,4 +292,87 @@ export async function upsertNotificationSettings(data: InsertNotificationSetting
   if (!db) throw new Error("Database not available");
   await db.delete(notificationSettings).where(eq(notificationSettings.userId, data.userId));
   await db.insert(notificationSettings).values(data);
+}
+
+// ---- Report Schedule helpers ----
+
+export async function createReportSchedule(data: InsertReportSchedule) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(reportSchedules).values(data);
+  return result;
+}
+
+export async function getReportSchedulesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(reportSchedules)
+    .where(eq(reportSchedules.userId, userId))
+    .orderBy(desc(reportSchedules.createdAt));
+}
+
+export async function getReportScheduleById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(reportSchedules)
+    .where(and(eq(reportSchedules.id, id), eq(reportSchedules.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getReportScheduleByCronUid(cronTaskUid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(reportSchedules)
+    .where(eq(reportSchedules.scheduleCronTaskUid, cronTaskUid))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateReportSchedule(id: number, userId: number, data: Partial<InsertReportSchedule>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(reportSchedules)
+    .set(data)
+    .where(and(eq(reportSchedules.id, id), eq(reportSchedules.userId, userId)));
+}
+
+export async function deleteReportSchedule(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(reportSchedules)
+    .where(and(eq(reportSchedules.id, id), eq(reportSchedules.userId, userId)));
+}
+
+export async function updateReportScheduleCronUid(id: number, cronTaskUid: string | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(reportSchedules)
+    .set({ scheduleCronTaskUid: cronTaskUid })
+    .where(eq(reportSchedules.id, id));
+}
+
+export async function markReportScheduleRun(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(reportSchedules)
+    .set({ lastRunAt: Date.now() })
+    .where(eq(reportSchedules.id, id));
+}
+
+// ---- Report Log helpers ----
+
+export async function createReportLog(data: InsertReportLog) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(reportLogs).values(data);
+}
+
+export async function getReportLogsByUserId(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(reportLogs)
+    .where(eq(reportLogs.userId, userId))
+    .orderBy(desc(reportLogs.createdAt))
+    .limit(limit);
 }

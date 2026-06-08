@@ -173,3 +173,60 @@ export const notificationSettings = mysqlTable("notification_settings", {
 
 export type NotificationSettings = typeof notificationSettings.$inferSelect;
 export type InsertNotificationSettings = typeof notificationSettings.$inferInsert;
+
+/**
+ * Report schedules — automated daily report configuration per user
+ * reportFormat: "pdf" | "excel" | "both"
+ * channels: which notification channels to send to
+ * scheduleCronTaskUid: Heartbeat cron task UID (daily 8:00 AM ICT = 01:00 UTC)
+ */
+export const reportSchedules = mysqlTable("report_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  adAccountId: varchar("adAccountId", { length: 64 }).notNull(),
+  adAccountName: varchar("adAccountName", { length: 255 }),
+  reportFormat: mysqlEnum("reportFormat", ["pdf", "excel", "both"]).default("both").notNull(),
+  notifyLine: tinyint("notifyLine").default(1).notNull(),
+  notifyEmail: tinyint("notifyEmail").default(0).notNull(),
+  // Cron expression (6-field UTC): default 0 1 * * * = daily 01:00 UTC = 08:00 ICT
+  cronExpression: varchar("cronExpression", { length: 64 }).default("0 0 1 * * *").notNull(),
+  isActive: tinyint("isActive").default(1).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  lastRunAt: bigint("lastRunAt", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReportSchedule = typeof reportSchedules.$inferSelect;
+export type InsertReportSchedule = typeof reportSchedules.$inferInsert;
+
+/**
+ * Report send logs — history of generated and sent reports
+ */
+export const reportLogs = mysqlTable("report_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  scheduleId: int("scheduleId").notNull(),
+  userId: int("userId").notNull(),
+  adAccountId: varchar("adAccountId", { length: 64 }).notNull(),
+  reportFormat: varchar("reportFormat", { length: 10 }).notNull(),
+  // S3 storage keys for generated files
+  pdfStorageKey: varchar("pdfStorageKey", { length: 512 }),
+  excelStorageKey: varchar("excelStorageKey", { length: 512 }),
+  // Notification results
+  lineNotified: tinyint("lineNotified").default(0).notNull(),
+  emailNotified: tinyint("emailNotified").default(0).notNull(),
+  // Summary metrics snapshot
+  totalSpend: float("totalSpend"),
+  totalImpressions: bigint("totalImpressions", { mode: "number" }),
+  totalClicks: bigint("totalClicks", { mode: "number" }),
+  totalLeads: bigint("totalLeads", { mode: "number" }),
+  totalPurchases: bigint("totalPurchases", { mode: "number" }),
+  avgRoas: float("avgRoas"),
+  status: mysqlEnum("status", ["success", "failed", "partial"]).default("success").notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ReportLog = typeof reportLogs.$inferSelect;
+export type InsertReportLog = typeof reportLogs.$inferInsert;

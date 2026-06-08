@@ -18,6 +18,7 @@ import {
   LineChart,
   LayoutDashboard,
   Bell,
+  FileText,
 } from "lucide-react";
 
 const features = [
@@ -85,6 +86,14 @@ const features = [
     bg: "bg-orange-50",
     href: "/budget-monitor",
   },
+  {
+    icon: FileText,
+    title: "Automated Report",
+    description: "สร้างรายงานผลโฆษณาอัตโนมัติเป็น PDF และ Excel ดึงข้อมูลจาก Meta API สรุป Spend, Leads, Purchases, ROAS ส่งเข้า LINE/Email ทุกเช้า 8:00 น.",
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    href: "/auto-report",
+  },
 ];
 
 const stats = [
@@ -150,6 +159,12 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                   <Bell className="w-3.5 h-3.5" />
                   Budget Monitor
+                </Button>
+              </Link>
+              <Link href="/auto-report">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  Auto Report
                 </Button>
               </Link>
             </div>

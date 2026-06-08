@@ -6,6 +6,7 @@ import { adAnalysisRouter } from "./routers/adAnalysis";
 import { adCopyRouter } from "./routers/adCopy";
 import { metaRouter } from "./routers/meta";
 import { budgetAlertRouter } from "./routers/budgetAlert";
+import { reportRouter } from "./routers/report";
 
 export const appRouter = router({
   system: systemRouter,
@@ -23,6 +24,7 @@ export const appRouter = router({
   adCopy: adCopyRouter,
   meta: metaRouter,
   budgetAlert: budgetAlertRouter,
+  report: reportRouter,
 });
 
 export type AppRouter = typeof appRouter;
