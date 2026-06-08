@@ -57,3 +57,27 @@
 - [x] Frontend: Line chart comparing metrics over time (Recharts)
 - [x] Frontend: Real-time refresh button
 - [x] Vitest tests for meta router (9 tests passing)
+
+## Budget Monitoring & Alert System
+- [x] Database schema: budget_alerts table (alert rules per campaign)
+- [x] Database schema: alert_logs table (notification history)
+- [x] Database schema: notification_settings table (LINE token + email)
+- [x] Alert Engine: fetch campaign insights from Meta API
+- [x] Alert Engine: isThresholdBreached checker (budget_spent, cpm, cost_per_purchase, cpc, cpa, roas_below)
+- [x] Alert Engine: sendLineNotification via LINE Notify API
+- [x] Alert Engine: sendEmailNotification via Manus built-in notification
+- [x] tRPC router: budgetAlert.create (create rule + schedule hourly heartbeat)
+- [x] tRPC router: budgetAlert.list
+- [x] tRPC router: budgetAlert.update (toggle active, change threshold)
+- [x] tRPC router: budgetAlert.delete (delete rule + cancel heartbeat)
+- [x] tRPC router: budgetAlert.getLogs
+- [x] tRPC router: budgetAlert.getNotificationSettings / saveNotificationSettings
+- [x] Scheduled endpoint: POST /api/scheduled/check-budget (heartbeat handler)
+- [x] Frontend: /budget-monitor page
+- [x] Frontend: Notification Settings dialog (LINE token + email)
+- [x] Frontend: Create Alert Rule dialog (campaign, metric, threshold, channels)
+- [x] Frontend: Alert Rules list with toggle active / delete
+- [x] Frontend: Alert history log tab
+- [x] Frontend: Summary KPI cards (total rules, active, triggered, log count)
+- [x] Frontend: Budget Monitor link in Home.tsx nav and features
+- [x] Vitest tests for budgetAlert router and alertEngine (18 tests passing)

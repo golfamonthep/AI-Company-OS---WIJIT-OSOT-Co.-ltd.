@@ -17,6 +17,7 @@ import {
   Users,
   LineChart,
   LayoutDashboard,
+  Bell,
 } from "lucide-react";
 
 const features = [
@@ -75,6 +76,14 @@ const features = [
     color: "text-indigo-600",
     bg: "bg-indigo-50",
     href: "/dashboard",
+  },
+  {
+    icon: Bell,
+    title: "Budget Monitor & Alert",
+    description: "ติดตามงบโฆษณาอัตโนมัติ แจ้งเตือนผ่าน LINE Notify และ Email เมื่อ Spend/CPM/Cost per Purchase เกินเกณฑ์",
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    href: "/budget-monitor",
   },
 ];
 
@@ -135,6 +144,12 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   Dashboard
+                </Button>
+              </Link>
+              <Link href="/budget-monitor">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                  <Bell className="w-3.5 h-3.5" />
+                  Budget Monitor
                 </Button>
               </Link>
             </div>

@@ -8,6 +8,8 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { sdk } from "./sdk";
+import { runAlertChecks } from "../alertEngine";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +38,38 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  // ─── Scheduled: Budget Alert Check ──────────────────────────────────────────
+  app.post("/api/scheduled/check-budget", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+
+      // The payload contains { alertId, userId } set when the heartbeat was created
+      const payload = req.body as { alertId?: number; userId?: number };
+      const targetUserId = payload.userId;
+
+      const results = await runAlertChecks(targetUserId);
+      const triggered = results.filter(r => r.triggered).length;
+
+      return res.json({
+        ok: true,
+        checked: results.length,
+        triggered,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[/api/scheduled/check-budget]", message);
+      return res.status(500).json({
+        error: message,
+        context: { url: req.url, taskUid: "unknown" },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

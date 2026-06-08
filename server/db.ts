@@ -1,6 +1,6 @@
 import { eq, desc, and, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache } from "../drizzle/schema";
+import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache, budgetAlerts, InsertBudgetAlert, alertLogs, InsertAlertLog, notificationSettings, InsertNotificationSettings } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -193,4 +193,103 @@ export async function saveInsightsCache(data: InsertAdInsightsCache) {
     eq(adInsightsCache.dateRange, data.dateRange),
   ));
   await db.insert(adInsightsCache).values(data);
+}
+
+// ---- Budget Alert helpers ----
+
+export async function createBudgetAlert(data: InsertBudgetAlert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(budgetAlerts).values(data);
+  return result;
+}
+
+export async function getBudgetAlertsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(budgetAlerts)
+    .where(eq(budgetAlerts.userId, userId))
+    .orderBy(desc(budgetAlerts.createdAt));
+}
+
+export async function getBudgetAlertById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(budgetAlerts)
+    .where(and(eq(budgetAlerts.id, id), eq(budgetAlerts.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getAllActiveBudgetAlerts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(budgetAlerts)
+    .where(eq(budgetAlerts.isActive, 1));
+}
+
+export async function updateBudgetAlert(id: number, userId: number, data: Partial<InsertBudgetAlert>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(budgetAlerts)
+    .set(data)
+    .where(and(eq(budgetAlerts.id, id), eq(budgetAlerts.userId, userId)));
+}
+
+export async function deleteBudgetAlert(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(budgetAlerts)
+    .where(and(eq(budgetAlerts.id, id), eq(budgetAlerts.userId, userId)));
+}
+
+export async function updateBudgetAlertCronUid(id: number, cronTaskUid: string | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(budgetAlerts)
+    .set({ scheduleCronTaskUid: cronTaskUid })
+    .where(eq(budgetAlerts.id, id));
+}
+
+export async function markAlertTriggered(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(budgetAlerts)
+    .set({ lastTriggeredAt: Date.now() })
+    .where(eq(budgetAlerts.id, id));
+}
+
+// ---- Alert Log helpers ----
+
+export async function createAlertLog(data: InsertAlertLog) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(alertLogs).values(data);
+}
+
+export async function getAlertLogsByUserId(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(alertLogs)
+    .where(eq(alertLogs.userId, userId))
+    .orderBy(desc(alertLogs.createdAt))
+    .limit(limit);
+}
+
+// ---- Notification Settings helpers ----
+
+export async function getNotificationSettings(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(notificationSettings)
+    .where(eq(notificationSettings.userId, userId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function upsertNotificationSettings(data: InsertNotificationSettings) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(notificationSettings).where(eq(notificationSettings.userId, data.userId));
+  await db.insert(notificationSettings).values(data);
 }
