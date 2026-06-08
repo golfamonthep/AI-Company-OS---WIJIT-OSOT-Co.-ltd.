@@ -230,3 +230,44 @@ export const reportLogs = mysqlTable("report_logs", {
 
 export type ReportLog = typeof reportLogs.$inferSelect;
 export type InsertReportLog = typeof reportLogs.$inferInsert;
+
+/**
+ * Cache table for Meta ad creative data (thumbnail, video metrics, ad-level insights)
+ * Stores fetched creative performance data to avoid repeated API calls
+ */
+export const creativeCache = mysqlTable("creative_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  adAccountId: varchar("adAccountId", { length: 64 }).notNull(),
+  dateRange: varchar("dateRange", { length: 10 }).notNull(), // "7d" | "14d" | "30d"
+  // Ad identifiers
+  adId: varchar("adId", { length: 64 }).notNull(),
+  adName: varchar("adName", { length: 512 }).notNull(),
+  adsetId: varchar("adsetId", { length: 64 }),
+  adsetName: varchar("adsetName", { length: 512 }),
+  campaignId: varchar("campaignId", { length: 64 }),
+  campaignName: varchar("campaignName", { length: 512 }),
+  // Creative assets
+  thumbnailUrl: text("thumbnailUrl"),
+  videoId: varchar("videoId", { length: 64 }),
+  creativeType: mysqlEnum("creativeType", ["image", "video", "carousel", "unknown"]).default("unknown"),
+  // Performance metrics
+  spend: float("spend").default(0),
+  impressions: bigint("impressions", { mode: "number" }).default(0),
+  clicks: bigint("clicks", { mode: "number" }).default(0),
+  ctr: float("ctr").default(0),
+  cpc: float("cpc").default(0),
+  cpa: float("cpa").default(0),
+  roas: float("roas").default(0),
+  conversions: bigint("conversions", { mode: "number" }).default(0),
+  // Video-specific metrics
+  videoThruPlays: bigint("videoThruPlays", { mode: "number" }).default(0),
+  video3SecPlays: bigint("video3SecPlays", { mode: "number" }).default(0),
+  videoAvgPlayTime: float("videoAvgPlayTime").default(0),
+  // Cache metadata
+  fetchedAt: bigint("fetchedAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CreativeCache = typeof creativeCache.$inferSelect;
+export type InsertCreativeCache = typeof creativeCache.$inferInsert;

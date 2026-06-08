@@ -36,6 +36,13 @@
       "when": 1780900339170,
       "tag": "0004_wakeful_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1780901351729,
+      "tag": "0005_red_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

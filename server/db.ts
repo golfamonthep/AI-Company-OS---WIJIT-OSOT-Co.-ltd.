@@ -1,6 +1,6 @@
 import { eq, desc, and, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache, budgetAlerts, InsertBudgetAlert, alertLogs, InsertAlertLog, notificationSettings, InsertNotificationSettings, reportSchedules, InsertReportSchedule, reportLogs, InsertReportLog } from "../drizzle/schema";
+import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache, budgetAlerts, InsertBudgetAlert, alertLogs, InsertAlertLog, notificationSettings, InsertNotificationSettings, reportSchedules, InsertReportSchedule, reportLogs, InsertReportLog, creativeCache, InsertCreativeCache } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -375,4 +375,50 @@ export async function getReportLogsByUserId(userId: number, limit = 30) {
     .where(eq(reportLogs.userId, userId))
     .orderBy(desc(reportLogs.createdAt))
     .limit(limit);
+}
+
+// ---- Creative Cache helpers ----
+export async function upsertCreativeCache(data: InsertCreativeCache) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete existing cache for same user+account+dateRange+adId before inserting fresh data
+  await db.delete(creativeCache)
+    .where(and(
+      eq(creativeCache.userId, data.userId),
+      eq(creativeCache.adAccountId, data.adAccountId),
+      eq(creativeCache.dateRange, data.dateRange),
+      eq(creativeCache.adId, data.adId),
+    ));
+  await db.insert(creativeCache).values(data);
+}
+
+export async function getCreativeCacheByAccount(
+  userId: number,
+  adAccountId: string,
+  dateRange: string,
+) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(creativeCache)
+    .where(and(
+      eq(creativeCache.userId, userId),
+      eq(creativeCache.adAccountId, adAccountId),
+      eq(creativeCache.dateRange, dateRange),
+    ))
+    .orderBy(desc(creativeCache.spend));
+}
+
+export async function deleteCreativeCacheByAccount(
+  userId: number,
+  adAccountId: string,
+  dateRange: string,
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(creativeCache)
+    .where(and(
+      eq(creativeCache.userId, userId),
+      eq(creativeCache.adAccountId, adAccountId),
+      eq(creativeCache.dateRange, dateRange),
+    ));
 }

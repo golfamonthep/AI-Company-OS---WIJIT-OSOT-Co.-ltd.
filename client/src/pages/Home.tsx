@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Bell,
   FileText,
+  Image,
 } from "lucide-react";
 
 const features = [
@@ -94,6 +95,14 @@ const features = [
     bg: "bg-teal-50",
     href: "/auto-report",
   },
+  {
+    icon: Image,
+    title: "Creative Performance",
+    description: "วิเคราะห์ประสิทธิภาพรูปภาพและวิดีโอโฆษณา ดู Thumbnail, CTR, 3-Sec Video Play, CPA, ROAS จัดอันดับ Top Performers และ Losers",
+    color: "text-pink-600",
+    bg: "bg-pink-50",
+    href: "/creative-performance",
+  },
 ];
 
 const stats = [
@@ -165,6 +174,12 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
                   Auto Report
+                </Button>
+              </Link>
+              <Link href="/creative-performance">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                  <Image className="w-3.5 h-3.5" />
+                  Creative
                 </Button>
               </Link>
             </div>

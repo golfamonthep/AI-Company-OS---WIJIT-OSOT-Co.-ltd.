@@ -102,3 +102,22 @@
 - [x] Frontend: Report history log with download links
 - [x] Frontend: Auto Report link in Home.tsx nav and features
 - [x] Vitest tests for report router and report generator (25 tests passing)
+
+## Creative Performance Dashboard
+- [x] Database schema: creative_cache table (store ad creative data: thumbnail_url, video_id, ad_name, ad_id, adset_id, campaign_id)
+- [x] tRPC router: creative.getCreativePerformance (fetch ads with insights: CTR, 3-sec video plays, CPA, ROAS, spend, impressions, clicks)
+- [x] tRPC router: creative.getTopPerformers (top N creatives sorted by ROAS/CTR)
+- [x] tRPC router: creative.getBottomPerformers (bottom N creatives sorted by CPA/low CTR)
+- [x] Meta API: fetch ad-level insights with thumbnail_url and video metrics (video_play_actions, video_3_sec_watched_actions)
+- [x] Meta API: fetch creative thumbnail via /act_{id}/ads?fields=creative{thumbnail_url,video_id,name}
+- [x] Frontend: /creative-performance page
+- [x] Frontend: Summary KPI bar (total creatives, avg CTR, avg ROAS, avg CPA)
+- [x] Frontend: Date range selector (7d / 14d / 30d)
+- [x] Frontend: Ad Account selector (reuse Meta token from existing connection)
+- [x] Frontend: Creative cards grid — show Thumbnail image, ad name, CTR, 3-sec plays, CPA, ROAS, Spend
+- [x] Frontend: Top Performers section (top 5 by ROAS) with green highlight
+- [x] Frontend: Losers section (bottom 5 by CPA or CTR) with red highlight
+- [x] Frontend: Sort & filter controls (sort by CTR / ROAS / CPA / Spend; filter by campaign)
+- [x] Frontend: Creative detail modal (click card → full metrics breakdown)
+- [x] Frontend: Creative Performance link in Home.tsx nav and features
+- [x] Vitest tests for creative router (data parsing, ranking logic, edge cases — 17 tests passing)
