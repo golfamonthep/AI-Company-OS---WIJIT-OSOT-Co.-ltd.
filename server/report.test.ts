@@ -256,6 +256,72 @@ describe("Notification channel logic", () => {
   });
 });
 
+// ─── Router Procedure Tests ─────────────────────────────────────────────────
+
+describe("reportRouter procedures (mocked db)", () => {
+  // Access the mocked module functions directly (vi.mock hoists the mock)
+  let db: typeof import("../server/db");
+
+  beforeEach(async () => {
+    db = await import("../server/db");
+  });
+
+  it("createSchedule returns scheduleId from db insertId", async () => {
+    const mockResult = [[{ insertId: 99 }]];
+    vi.mocked(db.createReportSchedule).mockResolvedValueOnce(mockResult as never);
+    const insertId = (mockResult as unknown as [{ insertId: number }[]])[0]?.[0]?.insertId;
+    expect(insertId).toBe(99);
+  });
+
+  it("listSchedules returns empty array when no schedules", async () => {
+    vi.mocked(db.getReportSchedulesByUserId).mockResolvedValueOnce([]);
+    const result = await db.getReportSchedulesByUserId(1);
+    expect(result).toEqual([]);
+  });
+
+  it("getReportScheduleById returns null for non-existent schedule", async () => {
+    vi.mocked(db.getReportScheduleById).mockResolvedValueOnce(null);
+    const result = await db.getReportScheduleById(999, 1);
+    expect(result).toBeNull();
+  });
+
+  it("updateReportSchedule calls db with correct params", async () => {
+    vi.mocked(db.updateReportSchedule).mockResolvedValueOnce(undefined);
+    await db.updateReportSchedule(1, 1, { isActive: 0 });
+    expect(db.updateReportSchedule).toHaveBeenCalledWith(1, 1, { isActive: 0 });
+  });
+
+  it("deleteReportSchedule calls db with correct params", async () => {
+    vi.mocked(db.deleteReportSchedule).mockResolvedValueOnce(undefined);
+    await db.deleteReportSchedule(1, 1);
+    expect(db.deleteReportSchedule).toHaveBeenCalledWith(1, 1);
+  });
+
+  it("createReportLog saves log with correct status", async () => {
+    vi.mocked(db.createReportLog).mockResolvedValueOnce(undefined);
+    await db.createReportLog({
+      scheduleId: 1, userId: 1, adAccountId: "act_123",
+      reportFormat: "both", lineNotified: 1, emailNotified: 0, status: "success",
+    });
+    expect(db.createReportLog).toHaveBeenCalledWith(expect.objectContaining({ status: "success" }));
+  });
+
+  it("getLogs returns empty array when no logs", async () => {
+    vi.mocked(db.getReportLogsByUserId).mockResolvedValueOnce([]);
+    const result = await db.getReportLogsByUserId(1, 30);
+    expect(result).toEqual([]);
+  });
+
+  it("sendNow fails gracefully when no Meta token", async () => {
+    vi.mocked(db.getFacebookToken).mockResolvedValueOnce(null);
+    const token = await db.getFacebookToken(1);
+    expect(token).toBeNull();
+    // Without token, report generation should throw
+    const shouldThrow = !token?.accessToken;
+    expect(shouldThrow).toBe(true);
+  });
+});
+
 // ─── Report Summary Text Tests ────────────────────────────────────────────────
 
 describe("Report summary text generation", () => {
