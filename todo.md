@@ -42,3 +42,18 @@
 - [x] Vitest unit tests for backend procedures (13 tests passing)
 - [x] Verify all pages render correctly (dev server running, no TypeScript errors)
 - [x] Mobile responsiveness check (responsive design with Tailwind breakpoints)
+
+## Facebook Ads Dashboard (Meta API)
+- [x] Database schema: facebook_tokens table (store user Meta access tokens)
+- [x] Database schema: ad_insights_cache table (cache API responses)
+- [x] tRPC router: meta.saveToken (save Meta access token for user)
+- [x] tRPC router: meta.getInsights (fetch insights from Meta API: spend, impressions, clicks, CTR, CPC, CPA, ROAS)
+- [x] tRPC router: meta.getAdAccounts (list user's ad accounts)
+- [x] tRPC router: meta.getDailyInsights (daily breakdown via time_increment=1 in getInsights)
+- [x] Frontend: /dashboard page with KPI summary cards
+- [x] Frontend: Meta OAuth connect flow (get access token)
+- [x] Frontend: Ad account selector
+- [x] Frontend: Date range selector (7d / 30d)
+- [x] Frontend: Line chart comparing metrics over time (Recharts)
+- [x] Frontend: Real-time refresh button
+- [x] Vitest tests for meta router (9 tests passing)

@@ -1,6 +1,6 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy } from "../drizzle/schema";
+import { InsertUser, users, adAnalyses, InsertAdAnalysis, adCopies, InsertAdCopy, facebookTokens, InsertFacebookToken, adInsightsCache, InsertAdInsightsCache } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -130,4 +130,67 @@ export async function getAdCopiesByUserId(userId: number, limit = 20) {
     .where(eq(adCopies.userId, userId))
     .orderBy(desc(adCopies.createdAt))
     .limit(limit);
+}
+
+// ---- Facebook Token helpers ----
+
+export async function saveFacebookToken(data: InsertFacebookToken) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Upsert: remove existing token for this user then insert fresh
+  await db.delete(facebookTokens).where(eq(facebookTokens.userId, data.userId));
+  await db.insert(facebookTokens).values(data);
+}
+
+export async function getFacebookToken(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(facebookTokens).where(eq(facebookTokens.userId, userId)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function deleteFacebookToken(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(facebookTokens).where(eq(facebookTokens.userId, userId));
+}
+
+export async function updateAdAccountSelection(userId: number, adAccountId: string, adAccountName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(facebookTokens)
+    .set({ selectedAdAccountId: adAccountId, selectedAdAccountName: adAccountName })
+    .where(eq(facebookTokens.userId, userId));
+}
+
+// ---- Ad Insights Cache helpers ----
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export async function getCachedInsights(userId: number, adAccountId: string, dateRange: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const minFetchedAt = Date.now() - CACHE_TTL_MS;
+  const rows = await db.select().from(adInsightsCache)
+    .where(and(
+      eq(adInsightsCache.userId, userId),
+      eq(adInsightsCache.adAccountId, adAccountId),
+      eq(adInsightsCache.dateRange, dateRange),
+      gt(adInsightsCache.fetchedAt, minFetchedAt),
+    ))
+    .orderBy(desc(adInsightsCache.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function saveInsightsCache(data: InsertAdInsightsCache) {
+  const db = await getDb();
+  if (!db) return;
+  // Remove old cache for same key before inserting
+  await db.delete(adInsightsCache).where(and(
+    eq(adInsightsCache.userId, data.userId),
+    eq(adInsightsCache.adAccountId, data.adAccountId),
+    eq(adInsightsCache.dateRange, data.dateRange),
+  ));
+  await db.insert(adInsightsCache).values(data);
 }

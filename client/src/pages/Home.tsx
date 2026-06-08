@@ -16,6 +16,7 @@ import {
   Sparkles,
   Users,
   LineChart,
+  LayoutDashboard,
 } from "lucide-react";
 
 const features = [
@@ -66,6 +67,14 @@ const features = [
     color: "text-cyan-600",
     bg: "bg-cyan-50",
     href: "/analyzer",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Ads Dashboard (Meta API)",
+    description: "ดูข้อมูล Spend, Impressions, Clicks, CTR, CPC, CPA, ROAS แบบ Real-time จาก Meta API พร้อมกราฟย้อนหลัง 7/30 วัน",
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    href: "/dashboard",
   },
 ];
 
@@ -120,6 +129,12 @@ export default function Home() {
               <Link href="/health-check">
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                   Health Check
+                </Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
                 </Button>
               </Link>
             </div>

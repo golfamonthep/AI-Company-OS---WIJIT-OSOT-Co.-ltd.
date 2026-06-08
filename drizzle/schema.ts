@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, float, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, float, json, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -68,3 +68,37 @@ export const adCopies = mysqlTable("ad_copies", {
 
 export type AdCopy = typeof adCopies.$inferSelect;
 export type InsertAdCopy = typeof adCopies.$inferInsert;
+
+/**
+ * Table for storing Meta (Facebook) access tokens per user
+ */
+export const facebookTokens = mysqlTable("facebook_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  accessToken: text("accessToken").notNull(),
+  selectedAdAccountId: varchar("selectedAdAccountId", { length: 64 }),
+  selectedAdAccountName: varchar("selectedAdAccountName", { length: 255 }),
+  expiresAt: bigint("expiresAt", { mode: "number" }), // Unix ms timestamp, null = long-lived
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FacebookToken = typeof facebookTokens.$inferSelect;
+export type InsertFacebookToken = typeof facebookTokens.$inferInsert;
+
+/**
+ * Cache table for Meta Ads Insights API responses (daily breakdown)
+ * Avoids hitting rate limits on every page load
+ */
+export const adInsightsCache = mysqlTable("ad_insights_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  adAccountId: varchar("adAccountId", { length: 64 }).notNull(),
+  dateRange: varchar("dateRange", { length: 10 }).notNull(), // "7d" | "30d"
+  data: json("data").notNull(), // raw insights array from Meta API
+  fetchedAt: bigint("fetchedAt", { mode: "number" }).notNull(), // Unix ms
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AdInsightsCache = typeof adInsightsCache.$inferSelect;
+export type InsertAdInsightsCache = typeof adInsightsCache.$inferInsert;

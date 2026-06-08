@@ -15,6 +15,13 @@
       "when": 1780779915902,
       "tag": "0001_far_prima",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1780895595690,
+      "tag": "0002_stiff_veda",
+      "breakpoints": true
     }
   ]
 }

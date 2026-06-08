@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { adAnalysisRouter } from "./routers/adAnalysis";
 import { adCopyRouter } from "./routers/adCopy";
+import { metaRouter } from "./routers/meta";
 
 export const appRouter = router({
   system: systemRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   }),
   adAnalysis: adAnalysisRouter,
   adCopy: adCopyRouter,
+  meta: metaRouter,
 });
 
 export type AppRouter = typeof appRouter;
