@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import BudgetMonitor from "./pages/BudgetMonitor";
 import AutoReport from "./pages/AutoReport";
 import CreativePerformance from "./pages/CreativePerformance";
+import CampaignComparison from "./pages/CampaignComparison";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -25,6 +26,7 @@ function Router() {
       <Route path={"/budget-monitor"} component={BudgetMonitor} />
       <Route path={"/auto-report"} component={AutoReport} />
       <Route path={"/creative-performance"} component={CreativePerformance} />
+      <Route path={"/campaign-comparison"} component={CampaignComparison} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

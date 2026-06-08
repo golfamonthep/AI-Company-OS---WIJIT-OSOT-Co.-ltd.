@@ -121,3 +121,18 @@
 - [x] Frontend: Creative detail modal (click card → full metrics breakdown)
 - [x] Frontend: Creative Performance link in Home.tsx nav and features
 - [x] Vitest tests for creative router (data parsing, ranking logic, edge cases — 17 tests passing)
+
+## Campaign Comparison Tool
+- [x] tRPC router: comparison.listCampaigns (fetch campaign list from Meta API for the selected ad account)
+- [x] tRPC router: comparison.getCampaignInsights (fetch metrics for a single campaign: spend, impressions, clicks, CTR, CPC, conversions, conversion_rate, cost_per_result, ROAS)
+- [x] tRPC router: comparison.compareMultiple (fetch and return metrics for 2-3 campaign IDs in parallel)
+- [x] Frontend: /campaign-comparison page
+- [x] Frontend: Ad Account selector (reuse saved Meta token)
+- [x] Frontend: Campaign multi-selector (select 2-3 campaigns from dropdown list)
+- [x] Frontend: Side-by-Side comparison table with rows = metrics, columns = campaigns
+- [x] Frontend: Green highlight on winning cell per metric row (lowest cost / highest rate)
+- [x] Frontend: Red highlight on losing cell per metric row
+- [x] Frontend: Summary winner badge per column (overall best campaign)
+- [x] Frontend: Bar chart visual comparison for key metrics (Spend, ROAS, CTR, CPA)
+- [x] Frontend: Campaign Comparison link in Home.tsx nav and features
+- [x] Vitest tests for comparison router (winner detection, edge cases - 27 tests passing)

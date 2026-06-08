@@ -20,6 +20,7 @@ import {
   Bell,
   FileText,
   Image,
+  GitCompare,
 } from "lucide-react";
 
 const features = [
@@ -103,6 +104,14 @@ const features = [
     bg: "bg-pink-50",
     href: "/creative-performance",
   },
+  {
+    icon: GitCompare,
+    title: "Campaign Comparison",
+    description: "เปรียบเทียบ 2-3 แคมเปญแบบ Side-by-Side ดู Cost per Result, Conversion Rate, ROAS, CTR พร้อม highlight สีเขียวในช่องที่ชนะ",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    href: "/campaign-comparison",
+  },
 ];
 
 const stats = [
@@ -180,6 +189,12 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
                   <Image className="w-3.5 h-3.5" />
                   Creative
+                </Button>
+              </Link>
+              <Link href="/campaign-comparison">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5">
+                  <GitCompare className="w-3.5 h-3.5" />
+                  Compare
                 </Button>
               </Link>
             </div>
